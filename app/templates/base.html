@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Pocketboard{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="navbar">
+    <span class="navbar-brand">Pocketboard</span>
+    {% if user %}
+    <nav class="navbar-nav">
+      <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">New Invite</a>
+      <a href="/audit" class="{% if request.url.path == '/audit' %}active{% endif %}">Audit Log</a>
+    </nav>
+    <div class="navbar-user">
+      <span>{{ user.name }}</span>
+      <a href="/logout" class="btn-link">Sign out</a>
+    </div>
+    {% endif %}
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

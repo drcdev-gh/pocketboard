@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:pocket-id.org)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:app.swaggerhub.com)",
+      "Bash(gh api *)",
+      "Bash(gh search *)",
+      "Bash(python3 -c \"import json,sys; [print\\(x['fullName'], '-', x.get\\('description',''\\)\\) for x in json.load\\(sys.stdin\\)]\")",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:migadu.com)"
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+services:
+  pocketboard:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - pocketboard_data:/data
+    environment:
+      # Pocket ID
+      POCKETID_BASE_URL: ${POCKETID_BASE_URL:?err=ENV missing}
+      POCKETID_API_KEY: ${POCKETID_API_KEY:?err=ENV missing}
+      POCKETID_CLIENT_ID: ${POCKETID_CLIENT_ID:?err=ENV missing}
+      POCKETID_CLIENT_SECRET: ${POCKETID_CLIENT_SECRET:?err=ENV missing}
+      # Migadu
+      MIGADU_API_EMAIL: ${MIGADU_API_EMAIL:?err=ENV missing}
+      MIGADU_API_KEY: ${MIGADU_API_KEY:?err=ENV missing}
+      MIGADU_DOMAIN: ${MIGADU_DOMAIN:?err=ENV missing}
+      # SMTP
+      SMTP_HOST: ${SMTP_HOST:?err=ENV missing}
+      SMTP_PORT: ${SMTP_PORT:?err=ENV missing}
+      SMTP_USER: ${SMTP_USER:?err=ENV missing}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?err=ENV missing}
+      SMTP_FROM: ${SMTP_FROM:?err=ENV missing}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:?err=ENV missing}
+      # Application
+      APP_SECRET_KEY: ${APP_SECRET_KEY:?err=ENV missing}
+      APP_BASE_URL: ${APP_BASE_URL:?err=ENV missing}
+      # Rate limiting
+      RATE_LIMIT_PER_USER_PER_DAY: ${RATE_LIMIT_PER_USER_PER_DAY:?err=ENV missing}
+      RATE_LIMIT_GLOBAL_PER_DAY: ${RATE_LIMIT_GLOBAL_PER_DAY:?err=ENV missing}
+      # Invite settings
+      INVITE_TTL: ${INVITE_TTL:?err=ENV missing}
+      INVITE_USAGE_LIMIT: ${INVITE_USAGE_LIMIT:?err=ENV missing}
+      # Group permission mappings
+      GROUP_MAPPINGS: ${GROUP_MAPPINGS:?err=ENV missing}
+
+volumes:
+  pocketboard_data:

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Audit Log – Pocketboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Audit Log</h1>
+  <p class="text-muted">{{ total }} invite{{ 's' if total != 1 else '' }} total</p>
+</div>
+
+{% if entries %}
+<div class="card table-card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Created by</th>
+        <th>Invitee</th>
+        <th>Org email</th>
+        <th>Groups</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr>
+        <td class="nowrap">{{ e.created_at[:16].replace('T', ' ') }}</td>
+        <td>
+          <div>{{ e.created_by_name }}</div>
+          <div class="text-muted small">{{ e.created_by_email }}</div>
+        </td>
+        <td>
+          <div>{{ e.invitee_name }}</div>
+          <div class="text-muted small">{{ e.invitee_email }}</div>
+        </td>
+        <td class="nowrap">{{ e.org_email }}</td>
+        <td>
+          {% for g in e.groups %}
+          <span class="badge">{{ g }}</span>
+          {% endfor %}
+        </td>
+        <td>
+          <span class="status status-{{ e.status }}">{{ e.status }}</span>
+          {% if e.error_message %}
+          <div class="text-muted small" title="{{ e.error_message }}">{{ e.error_message[:60] }}{% if e.error_message|length > 60 %}…{% endif %}</div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a href="/audit?page={{ page - 1 }}" class="btn btn-secondary">Previous</a>
+  {% endif %}
+  <span>Page {{ page }} of {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a href="/audit?page={{ page + 1 }}" class="btn btn-secondary">Next</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card empty-state">
+  <p>No invites have been sent yet.</p>
+</div>
+{% endif %}
+{% endblock %}
