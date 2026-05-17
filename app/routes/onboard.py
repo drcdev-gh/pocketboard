@@ -115,7 +115,10 @@ async def create_invite(
                 f"{invitee_email} already has an account in the ID management system."
             ))
     except Exception:
-        pass  # Don't block the invite if the lookup fails
+        return render(error=(
+            "Could not reach the ID management system. "
+            "Please try again later or contact your IT administrator."
+        ))
 
     org_email = f"{org_local_part}@{config.migadu_domain}"
     group_list = ", ".join(selected_groups)
