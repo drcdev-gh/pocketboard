@@ -34,6 +34,11 @@ services:
       INVITE_USAGE_LIMIT: ${INVITE_USAGE_LIMIT:?err=ENV missing}
       # Group permission mappings
       GROUP_MAPPINGS: ${GROUP_MAPPINGS:?err=ENV missing}
+      # Audit log access (optional)
+      AUDIT_LOG_GROUPS: ${AUDIT_LOG_GROUPS:-}
+      AUDIT_LOG_CLEAR_GROUPS: ${AUDIT_LOG_CLEAR_GROUPS:-}
+      # Email template override (optional)
+      ONBOARDING_TEMPLATE: ${ONBOARDING_TEMPLATE:-}
 
 volumes:
   pocketboard_data:

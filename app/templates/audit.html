@@ -23,12 +23,15 @@
     </thead>
     <tbody>
       {% for e in entries %}
-      <tr>
+      <tr{% if e.status == 'log_cleared' %} style="background:var(--color-warning-bg, #fffbe6)"{% endif %}>
         <td class="nowrap">{{ e.created_at[:16].replace('T', ' ') }}</td>
         <td>
           <div>{{ e.created_by_name }}</div>
           <div class="text-muted small">{{ e.created_by_email }}</div>
         </td>
+        {% if e.status == 'log_cleared' %}
+        <td colspan="3" class="text-muted">— audit log cleared —</td>
+        {% else %}
         <td>
           <div>{{ e.invitee_name }}</div>
           <div class="text-muted small">{{ e.invitee_email }}</div>
@@ -39,8 +42,9 @@
           <span class="badge">{{ g }}</span>
           {% endfor %}
         </td>
+        {% endif %}
         <td>
-          {% set status_labels = {"sent": "Sent", "email_failed": "Email failed"} %}
+          {% set status_labels = {"sent": "Sent", "email_failed": "Email failed", "log_cleared": "Log cleared"} %}
           <span class="status status-{{ e.status }}">{{ status_labels.get(e.status, e.status) }}</span>
           {% if e.error_message %}
           <div class="text-muted small" title="{{ e.error_message }}">{{ e.error_message[:60] }}{% if e.error_message|length > 60 %}…{% endif %}</div>
@@ -67,6 +71,15 @@
 {% else %}
 <div class="card empty-state">
   <p>No invites have been sent yet.</p>
+</div>
+{% endif %}
+
+{% if can_clear %}
+<div style="margin-top:2rem">
+  <form method="post" action="/audit/clear"
+        onsubmit="return confirm('This will permanently delete all invite records (log cleared entries will be kept). Are you sure?')">
+    <button type="submit" class="btn btn-danger">Clear audit log</button>
+  </form>
 </div>
 {% endif %}
 {% endblock %}
