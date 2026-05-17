@@ -49,4 +49,6 @@ async def send_invite_email(
         username=config.smtp_user,
         password=config.smtp_password,
         start_tls=True,
+        sender=config.smtp_from,
+        recipients=[to_email],
     )
