@@ -18,7 +18,7 @@ class Config:
         self.smtp_user = os.environ["SMTP_USER"]
         self.smtp_password = os.environ["SMTP_PASSWORD"]
         self.smtp_from = os.environ.get("SMTP_FROM", os.environ["SMTP_USER"])
-        self.smtp_from_name = os.environ.get("SMTP_FROM_NAME", "Volunteer Onboarding")
+        self.smtp_from_name = os.environ.get("SMTP_FROM_NAME", "Organisation Onboarding")
 
         self.app_secret_key = os.environ["APP_SECRET_KEY"]
         self.app_base_url = os.environ["APP_BASE_URL"].rstrip("/")

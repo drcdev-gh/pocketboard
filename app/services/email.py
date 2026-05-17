@@ -4,7 +4,7 @@ from app.config import config
 
 DEFAULT_TEMPLATE = """Hello {to_name},
 
-You have been invited to join our volunteer platform.
+You have been invited to join our organisation.
 
 Your new organisation email address: {org_email}
 
@@ -38,7 +38,7 @@ async def send_invite_email(
     )
 
     msg = MIMEText(body, "plain")
-    msg["Subject"] = "Your volunteer account invitation"
+    msg["Subject"] = "Your organisation account invitation"
     msg["From"] = f"{config.smtp_from_name} <{config.smtp_from}>"
     msg["To"] = f"{to_name} <{to_email}>"
 
