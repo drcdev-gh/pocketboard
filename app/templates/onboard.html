@@ -65,7 +65,10 @@
     </div>
   </div>
 
-  <button type="submit" class="btn btn-primary">Send Invite</button>
+  <button type="submit" id="submit-btn" class="btn btn-primary">Send Invite</button>
+  <p id="loading-msg" style="display:none;margin-top:1rem;font-weight:500;color:#555">
+    ⏳ Sending — this may take a few seconds. Please do not close or refresh this page.
+  </p>
 </form>
 {% endif %}
 
@@ -84,6 +87,25 @@
     });
     localInput.addEventListener('input', () => {
       localInput.dataset.touched = '1';
+    });
+  }
+
+  const form = document.querySelector('form[action="/invite"]');
+  if (form) {
+    let submitting = false;
+
+    form.addEventListener('submit', () => {
+      submitting = true;
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      document.getElementById('loading-msg').style.display = 'block';
+    });
+
+    window.addEventListener('beforeunload', (e) => {
+      if (submitting) {
+        e.preventDefault();
+      }
     });
   }
 </script>
