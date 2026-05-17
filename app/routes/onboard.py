@@ -61,9 +61,10 @@ async def create_invite(
 
     allowed_groups = config.allowed_target_groups(user["groups"])
 
+    fetched_groups: list[dict] | None = None
     try:
-        all_groups = await pid_svc.list_groups()
-        group_options = [g for g in all_groups if g["name"] in allowed_groups]
+        fetched_groups = await pid_svc.list_groups()
+        group_options = [g for g in fetched_groups if g["name"] in allowed_groups]
     except Exception:
         group_options = [{"id": name, "name": name} for name in allowed_groups]
 
@@ -124,7 +125,7 @@ async def create_invite(
     group_list = ", ".join(selected_groups)
 
     try:
-        group_ids = await pid_svc.resolve_group_ids(selected_groups)
+        group_ids = await pid_svc.resolve_group_ids(selected_groups, fetched_groups)
         token_data = await pid_svc.create_signup_token(group_ids)
     except Exception as exc:
         return render(error=(

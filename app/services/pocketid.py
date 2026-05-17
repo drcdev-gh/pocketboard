@@ -30,9 +30,9 @@ async def list_groups() -> list[dict]:
     return groups
 
 
-async def resolve_group_ids(group_names: list[str]) -> list[str]:
-    """Resolve group names to their PocketID UUIDs."""
-    all_groups = await list_groups()
+async def resolve_group_ids(group_names: list[str], all_groups: list[dict] | None = None) -> list[str]:
+    if all_groups is None:
+        all_groups = await list_groups()
     name_to_id = {g["name"]: g["id"] for g in all_groups}
     ids = []
     for name in group_names:
