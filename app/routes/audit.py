@@ -20,7 +20,7 @@ async def audit_log(request: Request, page: int = 1):
     page_size = 25
     offset = (page - 1) * page_size
 
-    async with await get_db() as db:
+    async with get_db() as db:
         async with db.execute(
             "SELECT COUNT(*) FROM audit_log"
         ) as cur:

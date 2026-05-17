@@ -6,7 +6,7 @@ async def check_and_record(user_sub: str) -> tuple[bool, str]:
     """
     Returns (allowed, reason). Records the attempt if allowed.
     """
-    async with await get_db() as db:
+    async with get_db() as db:
         # Count global invites in the last 24h
         async with db.execute(
             "SELECT COUNT(*) FROM rate_limit_log WHERE created_at >= strftime('%Y-%m-%dT%H:%M:%SZ', datetime('now', '-1 day'))"

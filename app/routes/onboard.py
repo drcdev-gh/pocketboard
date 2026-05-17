@@ -120,7 +120,7 @@ async def create_invite(
         )
     except Exception as exc:
         # Don't block — log failure but continue
-        async with await get_db() as db:
+        async with get_db() as db:
             await db.execute(
                 """INSERT INTO audit_log
                    (created_by_sub, created_by_email, created_by_name,
