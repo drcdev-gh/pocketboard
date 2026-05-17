@@ -135,7 +135,7 @@ async def create_invite(
             await db.commit()
         return render_error(f"Invite created but failed to send email: {exc}")
 
-    async with await get_db() as db:
+    async with get_db() as db:
         await db.execute(
             """INSERT INTO audit_log
                (created_by_sub, created_by_email, created_by_name,
