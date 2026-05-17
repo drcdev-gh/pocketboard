@@ -12,7 +12,7 @@
     {% if user %}
     <nav class="navbar-nav">
       <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">New Invite</a>
-      <a href="/audit" class="{% if request.url.path == '/audit' %}active{% endif %}">Audit Log</a>
+      {% if user_can_audit(user) %}<a href="/audit" class="{% if request.url.path == '/audit' %}active{% endif %}">Audit Log</a>{% endif %}
     </nav>
     <div class="navbar-user">
       <span>{{ user.name }}</span>

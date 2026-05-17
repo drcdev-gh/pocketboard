@@ -59,5 +59,19 @@ async def create_signup_token(group_ids: list[str]) -> dict:
         return resp.json()
 
 
+async def user_exists_by_email(email: str) -> bool:
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{_BASE}/users",
+            headers=_HEADERS,
+            params={"search": email, "limit": 10},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("data", data) if isinstance(data, dict) else data
+        return any(u.get("email", "").lower() == email.lower() for u in items)
+
+
 def build_invite_url(token: str) -> str:
     return f"{config.pocketid_base_url}/st/{token}"

@@ -1,14 +1,14 @@
 import json
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 
 from app.auth import get_current_user
+from app.config import config
 from app.database import get_db
+from app.templating import templates, _user_can_audit
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/audit", response_class=HTMLResponse)
@@ -16,6 +16,17 @@ async def audit_log(request: Request, page: int = 1):
     user = get_current_user(request)
     if not user:
         return RedirectResponse(url="/login", status_code=302)
+
+    if not _user_can_audit(user):
+        return templates.TemplateResponse("audit.html", {
+            "request": request,
+            "user": user,
+            "access_denied": True,
+            "entries": [],
+            "page": 1,
+            "total_pages": 1,
+            "total": 0,
+        }, status_code=403)
 
     page_size = 25
     offset = (page - 1) * page_size

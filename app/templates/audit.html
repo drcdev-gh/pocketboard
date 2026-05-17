@@ -3,15 +3,17 @@
 {% block content %}
 <div class="page-header">
   <h1>Audit Log</h1>
-  <p class="text-muted">{{ total }} invite{{ 's' if total != 1 else '' }} total</p>
+  {% if not access_denied %}<p class="text-muted">{{ total }} invite{{ 's' if total != 1 else '' }} total</p>{% endif %}
 </div>
 
-{% if entries %}
+{% if access_denied %}
+<div class="alert alert-error">You do not have permission to view the audit log. Contact your IT administrator.</div>
+{% elif entries %}
 <div class="card table-card">
   <table class="table">
     <thead>
       <tr>
-        <th>Date</th>
+        <th>Date (UTC)</th>
         <th>Created by</th>
         <th>Invitee</th>
         <th>Org email</th>
@@ -38,7 +40,8 @@
           {% endfor %}
         </td>
         <td>
-          <span class="status status-{{ e.status }}">{{ e.status }}</span>
+          {% set status_labels = {"sent": "Sent", "email_failed": "Email failed"} %}
+          <span class="status status-{{ e.status }}">{{ status_labels.get(e.status, e.status) }}</span>
           {% if e.error_message %}
           <div class="text-muted small" title="{{ e.error_message }}">{{ e.error_message[:60] }}{% if e.error_message|length > 60 %}…{% endif %}</div>
           {% endif %}

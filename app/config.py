@@ -32,6 +32,13 @@ class Config:
 
         self.group_mappings_raw = os.environ.get("GROUP_MAPPINGS", "")
         self.onboarding_template = os.environ.get("ONBOARDING_TEMPLATE", "")
+        self.audit_log_groups_raw = os.environ.get("AUDIT_LOG_GROUPS", "")
+
+    @property
+    def audit_log_groups(self) -> List[str]:
+        if not self.audit_log_groups_raw:
+            return []
+        return [g.strip() for g in self.audit_log_groups_raw.split(",") if g.strip()]
 
     @property
     def group_mappings(self) -> Dict[str, List[str]]:

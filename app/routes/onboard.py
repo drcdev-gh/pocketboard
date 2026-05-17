@@ -1,19 +1,18 @@
 import json
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 
 from app.auth import get_current_user
 from app.config import config
 from app.database import get_db
 from app.rate_limit import check_and_record
+from app.templating import templates
 from app.services import pocketid as pid_svc
 from app.services import migadu as migadu_svc
 from app.services import email as email_svc
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -95,6 +94,28 @@ async def create_invite(
     allowed, reason = await check_and_record(user["sub"])
     if not allowed:
         return render(error=reason)
+
+    # Pre-check: already invited via this system?
+    async with get_db() as db:
+        async with db.execute(
+            "SELECT COUNT(*) FROM audit_log WHERE invitee_email = ?",
+            (invitee_email,),
+        ) as cur:
+            already_invited = (await cur.fetchone())[0] > 0
+    if already_invited:
+        return render(error=(
+            f"{invitee_email} has already been invited. "
+            f"Check the audit log for details."
+        ))
+
+    # Pre-check: already has an account in PocketID?
+    try:
+        if await pid_svc.user_exists_by_email(invitee_email):
+            return render(error=(
+                f"{invitee_email} already has an account in the ID management system."
+            ))
+    except Exception:
+        pass  # Don't block the invite if the lookup fails
 
     org_email = f"{org_local_part}@{config.migadu_domain}"
     group_list = ", ".join(selected_groups)
