@@ -10,6 +10,10 @@
 <div class="alert alert-success">{{ message }}</div>
 {% endif %}
 
+{% if warning %}
+<div class="alert alert-warning" style="white-space:pre-line">{{ warning }}</div>
+{% endif %}
+
 {% if error %}
 <div class="alert alert-error">{{ error }}</div>
 {% endif %}

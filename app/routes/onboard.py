@@ -68,47 +68,56 @@ async def create_invite(
     except Exception:
         group_options = [{"id": name, "name": name} for name in allowed_groups]
 
-    def render_error(msg: str):
+    def render(*, message=None, error=None, warning=None, form=form_data):
         return templates.TemplateResponse("onboard.html", {
             "request": request,
             "user": user,
             "group_options": group_options,
             "migadu_domain": config.migadu_domain,
-            "message": None,
-            "error": msg,
-            "form": form_data,
+            "message": message,
+            "warning": warning,
+            "error": error,
+            "form": form,
         })
 
     # Validate selected groups are within what the user is allowed
     invalid = [g for g in selected_groups if g not in allowed_groups]
     if invalid:
-        return render_error("Selected groups are not permitted for your account.")
+        return render(error="Selected groups are not permitted for your account.")
 
     if not selected_groups:
-        return render_error("Please select at least one group.")
+        return render(error="Please select at least one group.")
 
     if not org_local_part or not org_local_part.replace("-", "").replace(".", "").isalnum():
-        return render_error("Organisation email local part contains invalid characters.")
+        return render(error="Organisation email local part contains invalid characters.")
 
     # Rate limit check
     allowed, reason = await check_and_record(user["sub"])
     if not allowed:
-        return render_error(reason)
+        return render(error=reason)
 
     org_email = f"{org_local_part}@{config.migadu_domain}"
+    group_list = ", ".join(selected_groups)
 
     try:
         group_ids = await pid_svc.resolve_group_ids(selected_groups)
         token_data = await pid_svc.create_signup_token(group_ids)
     except Exception as exc:
-        return render_error(f"Failed to create PocketID invite: {exc}")
+        return render(error=(
+            f"Could not create the account invitation in the ID management system. "
+            f"No account or mailbox has been set up. "
+            f"Please contact your IT administrator."
+        ))
 
     invite_url = pid_svc.build_invite_url(token_data["token"])
 
     try:
         await migadu_svc.create_mailbox(org_local_part, invitee_name, invitee_email)
     except Exception as exc:
-        return render_error(f"Failed to create email mailbox: {exc}")
+        return render(error=(
+            f"Could not create the organisation email mailbox ({org_email}). "
+            f"Please contact your IT administrator."
+        ))
 
     try:
         await email_svc.send_invite_email(
@@ -119,7 +128,6 @@ async def create_invite(
             groups=selected_groups,
         )
     except Exception as exc:
-        # Don't block — log failure but continue
         async with get_db() as db:
             await db.execute(
                 """INSERT INTO audit_log
@@ -133,7 +141,15 @@ async def create_invite(
                  "email_failed", str(exc)),
             )
             await db.commit()
-        return render_error(f"Invite created but failed to send email: {exc}")
+        return render(
+            warning=(
+                f"The account and mailbox for {invitee_name} were created successfully, "
+                f"but the invitation email could not be delivered to {invitee_email}. "
+                f"Please forward the invite link to them manually, or contact your IT administrator.\n"
+                f"Invite link: {invite_url}"
+            ),
+            form={},
+        )
 
     async with get_db() as db:
         await db.execute(
@@ -149,12 +165,11 @@ async def create_invite(
         )
         await db.commit()
 
-    return templates.TemplateResponse("onboard.html", {
-        "request": request,
-        "user": user,
-        "group_options": group_options,
-        "migadu_domain": config.migadu_domain,
-        "message": f"Invite sent to {invitee_email}. Organisation email: {org_email}",
-        "error": None,
-        "form": {},
-    })
+    return render(
+        message=(
+            f"Invitation sent successfully to {invitee_name} ({invitee_email}). "
+            f"Organisation email: {org_email}. "
+            f"Groups assigned: {group_list}."
+        ),
+        form={},
+    )
