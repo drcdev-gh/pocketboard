@@ -92,20 +92,11 @@
 
   const form = document.querySelector('form[action="/invite"]');
   if (form) {
-    let submitting = false;
-
     form.addEventListener('submit', () => {
-      submitting = true;
       const btn = document.getElementById('submit-btn');
       btn.disabled = true;
       btn.textContent = 'Sending…';
       document.getElementById('loading-msg').style.display = 'block';
-    });
-
-    window.addEventListener('beforeunload', (e) => {
-      if (submitting) {
-        e.preventDefault();
-      }
     });
   }
 </script>
