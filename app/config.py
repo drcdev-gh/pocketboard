@@ -31,6 +31,7 @@ class Config:
         self.invite_usage_limit = int(os.environ.get("INVITE_USAGE_LIMIT", "1"))
 
         self.group_mappings_raw = os.environ.get("GROUP_MAPPINGS", "")
+        self.onboarding_template = os.environ.get("ONBOARDING_TEMPLATE", "")
 
     @property
     def group_mappings(self) -> Dict[str, List[str]]:
