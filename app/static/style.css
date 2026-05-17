@@ -89,7 +89,7 @@ body {
   box-shadow: var(--shadow);
   padding: 24px;
 }
-.table-card { padding: 0; overflow: hidden; }
+.table-card { padding: 0; overflow-x: auto; }
 .empty-state { text-align: center; color: var(--muted); padding: 48px; }
 
 /* ── Alerts ── */
@@ -184,6 +184,8 @@ body {
   border: 1px solid var(--border);
 }
 .btn-secondary:hover { background: var(--bg); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #a61919; }
 .btn-block { display: block; text-align: center; width: 100%; }
 
 /* ── Table ── */
@@ -224,6 +226,7 @@ body {
 .status-sent { color: var(--green); }
 .status-email_failed { color: var(--yellow); }
 .status-failed { color: var(--red); }
+.status-log_cleared { color: var(--muted); }
 
 /* ── Pagination ── */
 .pagination {
