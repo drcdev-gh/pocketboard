@@ -147,6 +147,31 @@ async def get_last_activity(
     return last_seen, oldest_seen
 
 
+async def get_signup_token_usage() -> dict[str, int]:
+    """Return {token_id: usage_count} for all known signup tokens."""
+    usage: dict[str, int] = {}
+    page = 1
+    async with httpx.AsyncClient() as client:
+        while True:
+            resp = await client.get(
+                f"{_BASE}/signup-tokens",
+                headers=_HEADERS,
+                params={"page": page, "limit": 100},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            items = data.get("data", data) if isinstance(data, dict) else data
+            if not items:
+                break
+            for token in items:
+                usage[token["id"]] = token.get("usageCount", 0)
+            if len(items) < 100:
+                break
+            page += 1
+    return usage
+
+
 async def get_group_with_members(group_id: str) -> dict:
     async with httpx.AsyncClient() as client:
         resp = await client.get(
@@ -177,6 +202,35 @@ async def get_all_groups_with_members() -> list[dict]:
         if not fetched:
             output.append({**group_meta, "users": [], "fetch_error": True})
     return output
+
+
+async def get_user_by_email(email: str) -> dict | None:
+    """Return the full UserDto (including userGroups) for the given email, or None."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{_BASE}/users",
+            headers=_HEADERS,
+            params={"search": email, "limit": 10},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("data", data) if isinstance(data, dict) else data
+        match = next((u for u in items if (u.get("email") or "").lower() == email.lower()), None)
+        if not match:
+            return None
+        resp = await client.get(
+            f"{_BASE}/users/{match['id']}",
+            headers=_HEADERS,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def get_user_last_activity(user_id: str) -> str | None:
+    result, _ = await get_last_activity(limit=300, expected_user_ids={user_id})
+    return result.get(user_id)
 
 
 async def user_exists_by_email(email: str) -> bool:

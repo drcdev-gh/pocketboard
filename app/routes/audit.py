@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -33,9 +34,12 @@ async def audit_log(request: Request, page: int = 1):
         }, status_code=403)
 
     try:
-        registered_emails = await pid_svc.get_registered_emails()
+        registered_emails, token_usage = await asyncio.gather(
+            pid_svc.get_registered_emails(),
+            pid_svc.get_signup_token_usage(),
+        )
     except Exception:
-        registered_emails = set()
+        registered_emails, token_usage = set(), {}
 
     page_size = 25
     offset = (page - 1) * page_size
@@ -64,21 +68,20 @@ async def audit_log(request: Request, page: int = 1):
             entry["groups"] = json.loads(entry["groups"])
         except (json.JSONDecodeError, TypeError):
             entry["groups"] = []
-        unregistered = (
-            entry["status"] in ("sent", "email_failed")
-            and entry["invitee_email"].lower() not in registered_emails
-        )
         entry["pending_registration"] = False
         entry["invite_expired"] = False
-        if unregistered:
-            try:
-                created = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
-                if created + ttl < now:
-                    entry["invite_expired"] = True
-                else:
+        if entry["status"] in ("sent", "email_failed"):
+            email_registered = entry["invitee_email"].lower() in registered_emails
+            token_used = token_usage.get(entry.get("pocketid_token_id", ""), 0) >= 1
+            if not email_registered and not token_used:
+                try:
+                    created = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
+                    if created + ttl < now:
+                        entry["invite_expired"] = True
+                    else:
+                        entry["pending_registration"] = True
+                except Exception:
                     entry["pending_registration"] = True
-            except Exception:
-                entry["pending_registration"] = True
         entries.append(entry)
 
     total_pages = max(1, (total + page_size - 1) // page_size)
