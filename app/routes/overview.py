@@ -10,7 +10,7 @@ from app.services import pocketid as pid_svc
 
 router = APIRouter()
 
-_CACHE_TTL = 300  # 5 minutes
+_CACHE_TTL = 12 * 3600  # 12 hours
 _cache: list | None = None
 _cache_expires: float = 0
 
@@ -46,6 +46,22 @@ async def _fetch_groups() -> list[dict]:
     return groups
 
 
+async def refresh_cache() -> None:
+    global _cache, _cache_expires
+    try:
+        groups = await _fetch_groups()
+        _cache = groups
+        _cache_expires = time.time() + _CACHE_TTL
+    except Exception:
+        pass  # keep existing cache on failure
+
+
+async def background_refresh_loop() -> None:
+    while True:
+        await refresh_cache()
+        await asyncio.sleep(_CACHE_TTL)
+
+
 @router.get("/overview", response_class=HTMLResponse)
 async def org_overview(request: Request):
     global _cache, _cache_expires
@@ -62,15 +78,7 @@ async def org_overview(request: Request):
             "groups": [],
         }, status_code=403)
 
-    if _cache is not None and time.time() < _cache_expires:
-        groups = _cache
-    else:
-        try:
-            groups = await _fetch_groups()
-            _cache = groups
-            _cache_expires = time.time() + _CACHE_TTL
-        except Exception:
-            groups = _cache or []
+    groups = _cache or []
 
     return templates.TemplateResponse("overview.html", {
         "request": request,
