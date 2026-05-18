@@ -32,7 +32,7 @@ async def _get_template() -> str:
             return row[0]
     except Exception:
         pass
-    return config.onboarding_template or DEFAULT_TEMPLATE
+    return DEFAULT_TEMPLATE
 
 
 async def send_invite_email(

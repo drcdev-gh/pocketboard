@@ -41,9 +41,8 @@ services:
       ORG_OVERVIEW_GROUPS: ${ORG_OVERVIEW_GROUPS:-}
       # Default pre-selected groups in the invite form (optional)
       DEFAULT_SELECTED_GROUPS: ${DEFAULT_SELECTED_GROUPS:-}
-      # Email subject and template override (optional)
+      # Email subject override (optional)
       INVITE_EMAIL_SUBJECT: ${INVITE_EMAIL_SUBJECT:-}
-      ONBOARDING_TEMPLATE: ${ONBOARDING_TEMPLATE:-}
 
 volumes:
   pocketboard_data:

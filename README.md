@@ -85,7 +85,8 @@ All configuration is via environment variables. Copy `.env.example` to `.env` an
 | `INVITE_USAGE_LIMIT` | `1` | How many times the signup link can be used |
 | `AUDIT_LOG_GROUPS` | — | Comma-separated Pocket ID group names that can view the audit log. If unset, no one can view it. |
 | `AUDIT_LOG_CLEAR_GROUPS` | — | Comma-separated Pocket ID group names that can clear the audit log. If unset, no one can clear it. |
-| `ONBOARDING_TEMPLATE` | built-in | Custom invitation email body (see below) |
+| `EMAIL_TEMPLATE_GROUPS` | — | Comma-separated Pocket ID group names that can edit the invitation email template via the UI. If unset, no one can edit it. |
+| `INVITE_EMAIL_SUBJECT` | `Your organisation account invitation` | Subject line for invitation emails. |
 
 ### Group mappings
 
@@ -105,31 +106,7 @@ A user's allowed target groups are the union of all mappings that match their ow
 
 ### Custom email template
 
-Set `ONBOARDING_TEMPLATE` to override the invitation email body. Available placeholders:
-
-| Placeholder | Value |
-|---|---|
-| `{to_name}` | Invitee's full name |
-| `{org_email}` | Their new organisation email address |
-| `{invite_url}` | The Pocket ID account setup link |
-| `{group_list}` | Comma-separated list of assigned groups |
-| `{org_domain}` | The Migadu domain |
-
-In `docker-compose.yml`, use a YAML block scalar to preserve newlines:
-
-```yaml
-environment:
-  ONBOARDING_TEMPLATE: |
-    Hello {to_name},
-
-    You have been invited to join our organisation.
-    Your new email address is {org_email}.
-
-    Set up your account here: {invite_url}
-
-    Regards,
-    The Admin Team
-```
+The invitation email body is configurable via the **Email Template** page in the UI (requires `EMAIL_TEMPLATE_GROUPS` to be set). Available placeholders: `{to_name}`, `{org_email}` (required), `{invite_url}` (required), `{group_list}`, `{org_domain}`. Every change is recorded in the audit log.
 
 ## Data
 
