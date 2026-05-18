@@ -1,7 +1,17 @@
+import hashlib
 from fastapi.templating import Jinja2Templates
 from app.config import config
 
 templates = Jinja2Templates(directory="app/templates")
+
+def _css_version() -> str:
+    try:
+        with open("app/static/style.css", "rb") as f:
+            return hashlib.md5(f.read()).hexdigest()[:10]
+    except Exception:
+        return "1"
+
+templates.env.globals["css_version"] = _css_version()
 
 
 def user_can_audit(user: dict) -> bool:
