@@ -28,9 +28,7 @@
             <th>Name</th>
             <th>Email</th>
             <th>Username</th>
-            <th>Other groups</th>
             <th>Last activity (UTC)</th>
-            <th>Admin</th>
           </tr>
         </thead>
         <tbody>
@@ -39,19 +37,8 @@
             <td>{{ member.displayName }}</td>
             <td>{{ member.email or '—' }}</td>
             <td class="text-muted" style="font-size:0.85rem">{{ member.username }}</td>
-            <td>
-              {% set other_groups = member.userGroups | selectattr('name', '!=', group.name) | list %}
-              {% for g in other_groups %}
-              <span class="badge">{{ g.friendlyName or g.name }}</span>
-              {% endfor %}
-            </td>
             <td class="nowrap text-muted" style="font-size:0.85rem">
               {{ member.lastActivity[:16].replace('T', ' ') if member.lastActivity else '—' }}
-            </td>
-            <td>
-              {% if member.isAdmin %}
-              <span class="badge" style="background:#fef3c7;color:#92400e;border-color:#fcd34d">Admin</span>
-              {% endif %}
             </td>
           </tr>
           {% endfor %}
