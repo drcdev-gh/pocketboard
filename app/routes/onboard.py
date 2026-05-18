@@ -1,4 +1,5 @@
 import json
+import uuid
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 from starlette.responses import RedirectResponse
@@ -150,6 +151,8 @@ async def create_invite(
             f"Please contact your IT administrator."
         ))
 
+    invite_id = str(uuid.uuid4())
+
     try:
         await email_svc.send_invite_email(
             to_email=invitee_email,
@@ -164,12 +167,12 @@ async def create_invite(
                 """INSERT INTO audit_log
                    (created_by_sub, created_by_email, created_by_name,
                     invitee_name, invitee_email, org_email,
-                    pocketid_token_id, groups, status, error_message)
-                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                    pocketid_token_id, groups, status, error_message, invite_id)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
                 (user["sub"], user["email"], user["name"],
                  invitee_name, invitee_email, org_email,
                  token_data["id"], json.dumps(selected_groups),
-                 "email_failed", str(exc)),
+                 "email_failed", str(exc), invite_id),
             )
             await db.commit()
         return render(
@@ -188,12 +191,12 @@ async def create_invite(
             """INSERT INTO audit_log
                (created_by_sub, created_by_email, created_by_name,
                 invitee_name, invitee_email, org_email,
-                pocketid_token_id, groups, status)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
+                pocketid_token_id, groups, status, invite_id)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
             (user["sub"], user["email"], user["name"],
              invitee_name, invitee_email, org_email,
              token_data["id"], json.dumps(selected_groups),
-             "sent"),
+             "sent", invite_id),
         )
         await db.commit()
 

@@ -27,7 +27,8 @@ async def init_db():
                 pocketid_token_id TEXT NOT NULL,
                 groups TEXT NOT NULL,
                 status TEXT NOT NULL DEFAULT 'sent',
-                error_message TEXT
+                error_message TEXT,
+                invite_id TEXT
             );
 
             CREATE TABLE IF NOT EXISTS rate_limit_log (
@@ -37,3 +38,10 @@ async def init_db():
             );
         """)
         await db.commit()
+
+        # Migration: add invite_id to existing databases that predate this column
+        async with db.execute("PRAGMA table_info(audit_log)") as cur:
+            columns = [row[1] for row in await cur.fetchall()]
+        if "invite_id" not in columns:
+            await db.execute("ALTER TABLE audit_log ADD COLUMN invite_id TEXT")
+            await db.commit()

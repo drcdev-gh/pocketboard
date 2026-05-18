@@ -6,6 +6,10 @@
   {% if not access_denied %}<p class="text-muted">{{ total }} invite{{ 's' if total != 1 else '' }} total</p>{% endif %}
 </div>
 
+<div class="alert alert-warning">
+  In case there are any issues with one of the invites, please contact your IT support team and mention the ID shown in the audit log.
+</div>
+
 {% if access_denied %}
 <div class="alert alert-error">You do not have permission to view the audit log. Contact your IT administrator.</div>
 {% elif entries %}
@@ -13,6 +17,7 @@
   <table class="table">
     <thead>
       <tr>
+        <th>ID</th>
         <th>Date (UTC)</th>
         <th>Created by</th>
         <th>Invitee</th>
@@ -24,13 +29,16 @@
     <tbody>
       {% for e in entries %}
       <tr{% if e.status == 'log_cleared' %} style="background:var(--color-warning-bg, #fffbe6)"{% endif %}>
+        <td class="nowrap" style="font-family:monospace;font-size:0.8rem;color:var(--muted)">
+          {{ e.invite_id[:8] if e.invite_id else '—' }}
+        </td>
         <td class="nowrap">{{ e.created_at[:16].replace('T', ' ') }}</td>
         <td>
           <div>{{ e.created_by_name }}</div>
           <div class="text-muted small">{{ e.created_by_email }}</div>
         </td>
         {% if e.status == 'log_cleared' %}
-        <td colspan="3" class="text-muted">— audit log cleared —</td>
+        <td colspan="4" class="text-muted">— audit log cleared —</td>
         {% else %}
         <td>
           <div>{{ e.invitee_name }}</div>

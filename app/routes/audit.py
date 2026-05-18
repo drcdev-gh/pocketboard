@@ -1,4 +1,5 @@
 import json
+import uuid
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from starlette.responses import RedirectResponse
@@ -36,7 +37,7 @@ async def audit_log(request: Request, page: int = 1):
 
         async with db.execute(
             """SELECT id, created_at, created_by_name, created_by_email,
-                      invitee_name, invitee_email, org_email, groups, status, error_message
+                      invitee_name, invitee_email, org_email, groups, status, error_message, invite_id
                FROM audit_log
                ORDER BY created_at DESC
                LIMIT ? OFFSET ?""",
@@ -81,10 +82,10 @@ async def clear_audit_log(request: Request):
             """INSERT INTO audit_log
                (created_by_sub, created_by_email, created_by_name,
                 invitee_name, invitee_email, org_email,
-                pocketid_token_id, groups, status)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
+                pocketid_token_id, groups, status, invite_id)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
             (user["sub"], user["email"], user["name"],
-             "", "", "", "", "[]", "log_cleared"),
+             "", "", "", "", "[]", "log_cleared", str(uuid.uuid4())),
         )
         await db.commit()
 
