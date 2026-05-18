@@ -27,7 +27,7 @@ async def org_overview(request: Request):
     try:
         raw_groups, last_sign_ins = await asyncio.gather(
             pid_svc.get_all_groups_with_members(),
-            pid_svc.get_last_sign_ins(),
+            pid_svc.get_last_activity(),
         )
     except Exception:
         raw_groups, last_sign_ins = [], {}

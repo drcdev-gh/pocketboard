@@ -60,8 +60,11 @@ async def create_signup_token(group_ids: list[str]) -> dict:
         return resp.json()
 
 
-async def get_last_sign_ins(limit: int = 500) -> dict[str, str]:
-    """Return {user_id: createdAt} for the most recent SIGN_IN per user."""
+_ACTIVITY_EVENTS = {"SIGN_IN", "CLIENT_AUTHORIZATION", "NEW_CLIENT_AUTHORIZATION"}
+
+
+async def get_last_activity(limit: int = 500) -> dict[str, str]:
+    """Return {user_id: createdAt} for the most recent activity event per user."""
     last_seen: dict[str, str] = {}
     page = 1
     fetched = 0
@@ -85,7 +88,7 @@ async def get_last_sign_ins(limit: int = 500) -> dict[str, str]:
             if not items:
                 break
             for entry in items:
-                if entry.get("event") == "SIGN_IN":
+                if entry.get("event") in _ACTIVITY_EVENTS:
                     uid = entry.get("userID")
                     if uid and uid not in last_seen:
                         last_seen[uid] = entry.get("createdAt", "")
