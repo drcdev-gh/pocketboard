@@ -12,6 +12,7 @@ router = APIRouter()
 
 _CACHE_TTL = 12 * 3600  # 12 hours
 _cache: list | None = None
+_cache_oldest: str | None = None
 _cache_expires: float = 0
 
 
@@ -25,7 +26,7 @@ async def _fetch_groups() -> list[dict]:
         for u in g.get("users", [])
         if not u.get("disabled", False)
     }
-    last_activity = await pid_svc.get_last_activity(expected_user_ids=user_ids)
+    last_activity, oldest_seen = await pid_svc.get_last_activity(expected_user_ids=user_ids)
 
     groups = []
     for g in raw_groups:
@@ -43,14 +44,15 @@ async def _fetch_groups() -> list[dict]:
         })
 
     groups.sort(key=lambda g: g["friendly_name"].lower() or g["name"].lower())
-    return groups
+    return groups, oldest_seen
 
 
 async def refresh_cache() -> None:
-    global _cache, _cache_expires
+    global _cache, _cache_oldest, _cache_expires
     try:
-        groups = await _fetch_groups()
+        groups, oldest_seen = await _fetch_groups()
         _cache = groups
+        _cache_oldest = oldest_seen
         _cache_expires = time.time() + _CACHE_TTL
     except Exception:
         pass  # keep existing cache on failure
@@ -78,11 +80,10 @@ async def org_overview(request: Request):
             "groups": [],
         }, status_code=403)
 
-    groups = _cache or []
-
     return templates.TemplateResponse("overview.html", {
         "request": request,
         "user": user,
         "access_denied": False,
-        "groups": groups,
+        "groups": _cache or [],
+        "oldest_activity": _cache_oldest[:10] if _cache_oldest else None,
     })

@@ -73,12 +73,15 @@ _ACTIVITY_EVENTS = {
 async def get_last_activity(
     limit: int = 500,
     expected_user_ids: set[str] | None = None,
-) -> dict[str, str]:
-    """Return {user_id: createdAt} for the most recent activity event per user.
+) -> tuple[dict[str, str], str | None]:
+    """Return ({user_id: createdAt}, oldest_timestamp_seen).
 
-    Stops early once all expected_user_ids have been found.
+    oldest_timestamp_seen is the earliest createdAt across all fetched entries,
+    representing the lookback boundary. Stops early once all expected_user_ids
+    have been found.
     """
     last_seen: dict[str, str] = {}
+    oldest_seen: str | None = None
     page = 1
     fetched = 0
     async with httpx.AsyncClient() as client:
@@ -101,17 +104,20 @@ async def get_last_activity(
             if not items:
                 break
             for entry in items:
+                created_at = entry.get("createdAt", "")
+                if created_at and (oldest_seen is None or created_at < oldest_seen):
+                    oldest_seen = created_at
                 if entry.get("event") in _ACTIVITY_EVENTS:
                     uid = entry.get("userID")
                     if uid and uid not in last_seen:
-                        last_seen[uid] = entry.get("createdAt", "")
+                        last_seen[uid] = created_at
             fetched += len(items)
             if len(items) < batch:
                 break
             if expected_user_ids and expected_user_ids.issubset(last_seen.keys()):
                 break
             page += 1
-    return last_seen
+    return last_seen, oldest_seen
 
 
 async def get_group_with_members(group_id: str) -> dict:
