@@ -32,6 +32,7 @@ class Config:
 
         self.group_mappings_raw = os.environ.get("GROUP_MAPPINGS", "")
         self.onboarding_template = os.environ.get("ONBOARDING_TEMPLATE", "")
+        self.invite_email_subject = os.environ.get("INVITE_EMAIL_SUBJECT", "Your organisation account invitation")
         self.audit_log_groups_raw = os.environ.get("AUDIT_LOG_GROUPS", "")
         self.audit_log_clear_groups_raw = os.environ.get("AUDIT_LOG_CLEAR_GROUPS", "")
         self.default_selected_groups_raw = os.environ.get("DEFAULT_SELECTED_GROUPS", "")

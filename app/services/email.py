@@ -38,7 +38,7 @@ async def send_invite_email(
     )
 
     msg = MIMEText(body, "plain")
-    msg["Subject"] = "Your organisation account invitation"
+    msg["Subject"] = config.invite_email_subject
     msg["From"] = f"{config.smtp_from_name} <{config.smtp_from}>"
     msg["To"] = f"{to_name} <{to_email}>"
 

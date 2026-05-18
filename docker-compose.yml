@@ -39,7 +39,8 @@ services:
       AUDIT_LOG_CLEAR_GROUPS: ${AUDIT_LOG_CLEAR_GROUPS:-}
       # Default pre-selected groups in the invite form (optional)
       DEFAULT_SELECTED_GROUPS: ${DEFAULT_SELECTED_GROUPS:-}
-      # Email template override (optional)
+      # Email subject and template override (optional)
+      INVITE_EMAIL_SUBJECT: ${INVITE_EMAIL_SUBJECT:-}
       ONBOARDING_TEMPLATE: ${ONBOARDING_TEMPLATE:-}
 
 volumes:
