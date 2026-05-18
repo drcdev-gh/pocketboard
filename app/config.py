@@ -65,12 +65,18 @@ class Config:
         return result
 
     def allowed_target_groups(self, user_groups: List[str]) -> List[str]:
-        """Return union of all target groups allowed for the given user groups."""
+        """Return target groups allowed for the given user groups, in config definition order."""
         mappings = self.group_mappings
-        allowed: set = set()
-        for g in user_groups:
-            allowed.update(mappings.get(g, []))
-        return sorted(allowed)
+        user_group_set = set(user_groups)
+        seen: set = set()
+        allowed: List[str] = []
+        for caller_group, targets in mappings.items():
+            if caller_group in user_group_set:
+                for target in targets:
+                    if target not in seen:
+                        seen.add(target)
+                        allowed.append(target)
+        return allowed
 
 
 config = Config()
