@@ -67,7 +67,16 @@
     </div>
   </div>
 
-  <button type="submit" id="submit-btn" class="btn btn-primary">Send Invite</button>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:20px">
+    <button type="submit" id="submit-btn" class="btn btn-primary" style="margin:0">Send Invite</button>
+    {% if rate_used is defined and rate_used is not none %}
+    {% set rate_remaining = rate_max - rate_used %}
+    <span style="font-size:0.85rem;color:{% if rate_remaining <= 2 %}var(--red){% elif rate_remaining <= 5 %}var(--yellow){% else %}var(--muted){% endif %}">
+      {{ rate_used }}/{{ rate_max }} invites used today
+      ({{ rate_remaining }} remaining)
+    </span>
+    {% endif %}
+  </div>
   <p id="loading-msg" style="display:none;margin-top:1rem;font-weight:500;color:var(--muted)">
     ⏳ Sending — this may take a few seconds. Please do not close or refresh this page.
   </p>

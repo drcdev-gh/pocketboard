@@ -7,7 +7,7 @@ from starlette.responses import RedirectResponse
 from app.auth import get_current_user
 from app.config import config
 from app.database import get_db
-from app.rate_limit import check_and_record
+from app.rate_limit import check_and_record, get_usage
 from app.templating import templates
 from app.services import pocketid as pid_svc
 from app.services import migadu as migadu_svc
@@ -33,12 +33,16 @@ async def index(request: Request):
     except Exception:
         group_options = [{"id": name, "name": name} for name in allowed_groups]
 
+    user_used, global_used = await get_usage(user["sub"])
+
     return templates.TemplateResponse("onboard.html", {
         "request": request,
         "user": user,
         "group_options": group_options,
         "migadu_domain": config.migadu_domain,
         "checked_groups": default_groups,
+        "rate_used": user_used,
+        "rate_max": config.rate_limit_per_user_per_day,
         "message": None,
         "error": None,
         "form": {},
