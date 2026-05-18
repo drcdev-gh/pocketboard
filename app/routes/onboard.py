@@ -102,11 +102,6 @@ async def create_invite(
     if not org_local_part or not org_local_part.replace("-", "").replace(".", "").isalnum():
         return render(error="Organisation email local part contains invalid characters.")
 
-    # Rate limit check
-    allowed, reason = await check_and_record(user["sub"])
-    if not allowed:
-        return render(error=reason)
-
     # Pre-check: already invited via this system?
     async with get_db() as db:
         async with db.execute(
@@ -131,6 +126,11 @@ async def create_invite(
             "Could not reach the ID management system. "
             "Please try again later or contact your IT administrator."
         ))
+
+    # Rate limit check — runs after pre-checks so rejected duplicates don't consume quota
+    allowed, reason = await check_and_record(user["sub"])
+    if not allowed:
+        return render(error=reason)
 
     org_email = f"{org_local_part}@{config.migadu_domain}"
     group_list = ", ".join(selected_groups)
