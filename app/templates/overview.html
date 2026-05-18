@@ -68,8 +68,8 @@
                         data-email="{{ member.email or '' }}"
                         data-username="{{ member.username }}"
                         data-activity="{{ member.lastActivity or '' }}"
-                        data-badges="{{ member.badges | tojson }}"
-                        data-groups="{{ member.groupNames | tojson }}"
+                        data-badges="{{ member.badges | tojson_attr }}"
+                        data-groups="{{ member.groupNames | tojson_attr }}"
                         data-disabled="{{ 'true' if member.disabled else 'false' }}"
                         style="padding:2px 8px;font-size:0.75rem;flex-shrink:0">Details</button>
               </div>

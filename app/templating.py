@@ -1,5 +1,7 @@
 import hashlib
+import json
 from fastapi.templating import Jinja2Templates
+from markupsafe import Markup
 from app.config import config
 
 templates = Jinja2Templates(directory="app/templates")
@@ -42,6 +44,12 @@ def user_can_edit_template(user: dict) -> bool:
     return bool(set(user.get("groups", [])) & set(groups))
 
 
+def _tojson_attr(value: object) -> Markup:
+    """JSON-encode a value and HTML-escape double quotes so it's safe in double-quoted HTML attributes."""
+    return Markup(json.dumps(value).replace('"', "&quot;"))
+
+
+templates.env.filters["tojson_attr"] = _tojson_attr
 templates.env.globals["user_can_audit"] = user_can_audit
 templates.env.globals["user_can_clear_audit"] = user_can_clear_audit
 templates.env.globals["user_can_overview"] = user_can_overview
