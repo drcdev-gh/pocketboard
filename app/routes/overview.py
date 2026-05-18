@@ -35,6 +35,16 @@ async def _fetch_groups() -> list[dict]:
 
     badge_map = config.badge_mappings
 
+    # Build user_id → set of group names from the already-fetched data
+    # (nested userGroups on each user is not populated by PocketID in group responses)
+    user_group_membership: dict[str, set[str]] = {}
+    for g in raw_groups:
+        gname = g.get("name", "")
+        for u in g.get("users", []):
+            uid = u.get("id")
+            if uid:
+                user_group_membership.setdefault(uid, set()).add(gname)
+
     groups = []
     for g in raw_groups:
         active_members = []
@@ -43,11 +53,11 @@ async def _fetch_groups() -> list[dict]:
                 continue
             u["lastActivity"] = last_activity.get(u["id"])
             if badge_map:
-                user_group_names = {ug.get("name") for ug in u.get("userGroups", [])}
+                member_groups = user_group_membership.get(u.get("id", ""), set())
                 u["badges"] = [
                     {"label": badge, "color": _badge_color_class(badge)}
                     for group_name, badge in badge_map.items()
-                    if group_name in user_group_names
+                    if group_name in member_groups
                 ]
             else:
                 u["badges"] = []
