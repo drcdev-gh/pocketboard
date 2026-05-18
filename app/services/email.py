@@ -21,18 +21,19 @@ The IT Team
 """
 
 
-async def _get_template() -> str:
+DEFAULT_SUBJECT = "Your organisation account invitation"
+
+
+async def _get_setting(key: str) -> str | None:
     try:
         async with get_db() as db:
             async with db.execute(
-                "SELECT value FROM settings WHERE key = 'email_template'"
+                "SELECT value FROM settings WHERE key = ?", (key,)
             ) as cur:
                 row = await cur.fetchone()
-        if row:
-            return row[0]
+        return row[0] if row else None
     except Exception:
-        pass
-    return DEFAULT_TEMPLATE
+        return None
 
 
 async def send_invite_email(
@@ -43,7 +44,8 @@ async def send_invite_email(
     groups: list[str],
 ) -> None:
     group_list = ", ".join(groups) if groups else "—"
-    template = await _get_template()
+    template = await _get_setting("email_template") or DEFAULT_TEMPLATE
+    subject = await _get_setting("email_subject") or DEFAULT_SUBJECT
     body = template.format(
         to_name=to_name,
         org_email=org_email,
@@ -53,7 +55,7 @@ async def send_invite_email(
     )
 
     msg = MIMEText(body, "plain")
-    msg["Subject"] = config.invite_email_subject
+    msg["Subject"] = subject
     msg["From"] = f"{config.smtp_from_name} <{config.smtp_from}>"
     msg["To"] = f"{to_name} <{to_email}>"
 

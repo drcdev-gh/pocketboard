@@ -50,6 +50,18 @@
 
 <form method="post" action="/email-template" class="card form-card" style="max-width:680px">
   <div class="form-group">
+    <label for="email_subject">
+      Subject line
+      {% if current_subject %}
+      <span class="hint">(custom subject active)</span>
+      {% else %}
+      <span class="hint">(showing default)</span>
+      {% endif %}
+    </label>
+    <input type="text" id="email_subject" name="email_subject" required
+           value="{{ submitted_subject if submitted_subject is defined else (current_subject or default_subject) }}">
+  </div>
+  <div class="form-group">
     <label for="template_body">
       Email body
       {% if current_template %}
@@ -63,14 +75,14 @@
               required>{{ submitted_body if submitted_body is defined else (current_template or default_template) }}</textarea>
   </div>
   <div style="display:flex;gap:12px;flex-wrap:wrap">
-    <button type="submit" class="btn btn-primary">Save template</button>
-    {% if current_template %}
+    <button type="submit" class="btn btn-primary">Save</button>
+    {% if current_template or current_subject %}
     <button type="button" onclick="document.getElementById('reset-form').submit()" class="btn btn-secondary">Reset to default</button>
     {% endif %}
   </div>
 </form>
 
-{% if current_template %}
+{% if current_template or current_subject %}
 <form id="reset-form" method="post" action="/email-template/reset" style="display:none"></form>
 {% endif %}
 

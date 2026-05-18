@@ -86,7 +86,6 @@ All configuration is via environment variables. Copy `.env.example` to `.env` an
 | `AUDIT_LOG_GROUPS` | — | Comma-separated Pocket ID group names that can view the audit log. If unset, no one can view it. |
 | `AUDIT_LOG_CLEAR_GROUPS` | — | Comma-separated Pocket ID group names that can clear the audit log. If unset, no one can clear it. |
 | `EMAIL_TEMPLATE_GROUPS` | — | Comma-separated Pocket ID group names that can edit the invitation email template via the UI. If unset, no one can edit it. |
-| `INVITE_EMAIL_SUBJECT` | `Your organisation account invitation` | Subject line for invitation emails. |
 
 ### Group mappings
 
