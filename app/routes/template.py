@@ -7,6 +7,7 @@ from starlette.responses import RedirectResponse
 from app.auth import get_current_user
 from app.database import get_db
 from app.services.email import DEFAULT_TEMPLATE, DEFAULT_SUBJECT
+from app.services import webhook as webhook_svc
 from app.templating import templates, user_can_edit_template
 
 router = APIRouter()
@@ -105,6 +106,12 @@ async def save_email_template(
         )
         await db.commit()
 
+    await webhook_svc.send(
+        event="email_template_changed",
+        text=f"✏️ **Invitation email template updated** by {user['name']} ({user['email']})",
+        data={"updated_by_name": user["name"], "updated_by_email": user["email"]},
+    )
+
     return RedirectResponse(url="/email-template?saved=1", status_code=303)
 
 
@@ -129,5 +136,11 @@ async def reset_email_template(request: Request):
              "", "", "", "", "[]", "template_changed", str(uuid.uuid4())),
         )
         await db.commit()
+
+    await webhook_svc.send(
+        event="email_template_reset",
+        text=f"↩️ **Invitation email template reset to default** by {user['name']} ({user['email']})",
+        data={"reset_by_name": user["name"], "reset_by_email": user["email"]},
+    )
 
     return RedirectResponse(url="/email-template?reset=1", status_code=303)

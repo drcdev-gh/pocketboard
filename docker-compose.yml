@@ -42,6 +42,7 @@ services:
       # Default pre-selected groups in the invite form (optional)
       DEFAULT_SELECTED_GROUPS: ${DEFAULT_SELECTED_GROUPS:-}
       BADGE_MAPPINGS: ${BADGE_MAPPINGS:-}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
 
 volumes:
   pocketboard_data:

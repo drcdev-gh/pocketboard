@@ -38,6 +38,7 @@ class Config:
         self.default_selected_groups_raw = os.environ.get("DEFAULT_SELECTED_GROUPS", "")
         self.email_template_groups_raw = os.environ.get("EMAIL_TEMPLATE_GROUPS", "")
         self.badge_mappings_raw = os.environ.get("BADGE_MAPPINGS", "")
+        self.webhook_url = os.environ.get("WEBHOOK_URL", "")
 
     @property
     def badge_mappings(self) -> Dict[str, str]:

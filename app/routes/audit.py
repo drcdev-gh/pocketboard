@@ -10,6 +10,7 @@ from app.config import config
 from app.database import get_db
 from app.templating import templates, user_can_audit, user_can_clear_audit
 from app.services import pocketid as pid_svc
+from app.services import webhook as webhook_svc
 
 router = APIRouter()
 
@@ -114,5 +115,11 @@ async def clear_audit_log(request: Request):
              "", "", "", "", "[]", "log_cleared", str(uuid.uuid4())),
         )
         await db.commit()
+
+    await webhook_svc.send(
+        event="audit_log_cleared",
+        text=f"🗑️ **Audit log cleared** by {user['name']} ({user['email']})",
+        data={"cleared_by_name": user["name"], "cleared_by_email": user["email"]},
+    )
 
     return RedirectResponse(url="/audit", status_code=303)

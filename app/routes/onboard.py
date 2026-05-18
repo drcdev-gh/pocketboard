@@ -12,6 +12,7 @@ from app.templating import templates
 from app.services import pocketid as pid_svc
 from app.services import migadu as migadu_svc
 from app.services import email as email_svc
+from app.services import webhook as webhook_svc
 
 router = APIRouter()
 
@@ -179,6 +180,19 @@ async def create_invite(
                  "email_failed", str(exc), invite_id),
             )
             await db.commit()
+        await webhook_svc.send(
+            event="invite_email_failed",
+            text=(
+                f"⚠️ **Invite created but email delivery failed**\n"
+                f"**Sent by:** {user['name']} ({user['email']})\n"
+                f"**Invitee:** {invitee_name} ({invitee_email})\n"
+                f"**Org email:** {org_email}\n"
+                f"**Groups:** {group_list}"
+            ),
+            data={"created_by_name": user["name"], "created_by_email": user["email"],
+                  "invitee_name": invitee_name, "invitee_email": invitee_email,
+                  "org_email": org_email, "groups": selected_groups, "invite_id": invite_id},
+        )
         return render(
             warning=(
                 f"The account and mailbox for {invitee_name} were created successfully, "
@@ -203,6 +217,20 @@ async def create_invite(
              "sent", invite_id),
         )
         await db.commit()
+
+    await webhook_svc.send(
+        event="invite_sent",
+        text=(
+            f"✅ **Invite sent successfully**\n"
+            f"**Sent by:** {user['name']} ({user['email']})\n"
+            f"**Invitee:** {invitee_name} ({invitee_email})\n"
+            f"**Org email:** {org_email}\n"
+            f"**Groups:** {group_list}"
+        ),
+        data={"created_by_name": user["name"], "created_by_email": user["email"],
+              "invitee_name": invitee_name, "invitee_email": invitee_email,
+              "org_email": org_email, "groups": selected_groups, "invite_id": invite_id},
+    )
 
     return render(
         message=(
