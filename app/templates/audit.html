@@ -55,6 +55,9 @@
         <td>
           {% set status_labels = {"sent": "Sent", "email_failed": "Email failed", "log_cleared": "Log cleared"} %}
           <span class="status status-{{ e.status }}">{{ status_labels.get(e.status, e.status) }}</span>
+          {% if e.pending_registration %}
+          <div style="margin-top:4px"><span class="badge badge-pending">Not yet registered</span></div>
+          {% endif %}
           {% if e.error_message %}
           <div class="text-muted small" title="{{ e.error_message }}">{{ e.error_message[:60] }}{% if e.error_message|length > 60 %}…{% endif %}</div>
           {% endif %}

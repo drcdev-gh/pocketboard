@@ -70,6 +70,33 @@ _ACTIVITY_EVENTS = {
 }
 
 
+async def get_registered_emails() -> set[str]:
+    """Return lowercase email addresses of all non-disabled PocketID users."""
+    emails: set[str] = set()
+    page = 1
+    async with httpx.AsyncClient() as client:
+        while True:
+            resp = await client.get(
+                f"{_BASE}/users",
+                headers=_HEADERS,
+                params={"page": page, "limit": 100},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            items = data.get("data", data) if isinstance(data, dict) else data
+            if not items:
+                break
+            for u in items:
+                email = u.get("email")
+                if email and not u.get("disabled", False):
+                    emails.add(email.lower())
+            if len(items) < 100:
+                break
+            page += 1
+    return emails
+
+
 async def get_last_activity(
     limit: int = 500,
     expected_user_ids: set[str] | None = None,

@@ -7,6 +7,7 @@ from starlette.responses import RedirectResponse
 from app.auth import get_current_user
 from app.database import get_db
 from app.templating import templates, user_can_audit, user_can_clear_audit
+from app.services import pocketid as pid_svc
 
 router = APIRouter()
 
@@ -27,6 +28,11 @@ async def audit_log(request: Request, page: int = 1):
             "total_pages": 1,
             "total": 0,
         }, status_code=403)
+
+    try:
+        registered_emails = await pid_svc.get_registered_emails()
+    except Exception:
+        registered_emails = set()
 
     page_size = 25
     offset = (page - 1) * page_size
@@ -52,6 +58,10 @@ async def audit_log(request: Request, page: int = 1):
             entry["groups"] = json.loads(entry["groups"])
         except (json.JSONDecodeError, TypeError):
             entry["groups"] = []
+        entry["pending_registration"] = (
+            entry["status"] in ("sent", "email_failed")
+            and entry["invitee_email"].lower() not in registered_emails
+        )
         entries.append(entry)
 
     total_pages = max(1, (total + page_size - 1) // page_size)

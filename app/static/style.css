@@ -279,6 +279,7 @@ body {
 .status-email_failed { color: var(--yellow); }
 .status-failed { color: var(--red); }
 .status-log_cleared { color: var(--muted); }
+.badge-pending { background:#fffbeb; color:#92400e; border-color:#fcd34d; }
 
 /* ── Pagination ── */
 .pagination {
