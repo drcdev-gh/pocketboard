@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Pocketboard{% endblock %}</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script>
+    (function(){
+      var t=localStorage.getItem('theme')||'system';
+      if(t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches))
+        document.documentElement.setAttribute('data-theme','dark');
+      else if(t==='light')
+        document.documentElement.setAttribute('data-theme','light');
+    })();
+  </script>
 </head>
 <body>
   <header class="navbar" id="navbar">
@@ -17,6 +26,11 @@
       {% if user_can_overview(user) %}<a href="/overview" class="{% if request.url.path == '/overview' %}active{% endif %}">Organisation Overview</a>{% endif %}
     </nav>
     <div class="navbar-user">
+      <select id="theme-picker" class="theme-picker" aria-label="Colour theme">
+        <option value="system">⊙ System</option>
+        <option value="light">☀ Light</option>
+        <option value="dark">🌙 Dark</option>
+      </select>
       <span>{{ user.name }}</span>
       <a href="/logout" class="btn-link">Sign out</a>
     </div>
@@ -27,6 +41,22 @@
     if (toggle) {
       toggle.addEventListener('click', () => {
         document.getElementById('navbar').classList.toggle('open');
+      });
+    }
+
+    const picker = document.getElementById('theme-picker');
+    if (picker) {
+      picker.value = localStorage.getItem('theme') || 'system';
+      picker.addEventListener('change', () => {
+        const t = picker.value;
+        localStorage.setItem('theme', t);
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        else if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
+        else {
+          const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
+          else document.documentElement.removeAttribute('data-theme');
+        }
       });
     }
   </script>
