@@ -160,11 +160,23 @@ async def get_group_with_members(group_id: str) -> dict:
 
 async def get_all_groups_with_members() -> list[dict]:
     groups = await list_groups()
-    results = await asyncio.gather(
-        *[get_group_with_members(g["id"]) for g in groups],
-        return_exceptions=True,
-    )
-    return [r for r in results if isinstance(r, dict)]
+    output = []
+    for i, group_meta in enumerate(groups):
+        if i > 0:
+            await asyncio.sleep(0.3)  # space requests to avoid PocketID rate limits
+        fetched = False
+        for attempt in range(2):
+            if attempt > 0:
+                await asyncio.sleep(1.0)  # pause before retry
+            try:
+                output.append(await get_group_with_members(group_meta["id"]))
+                fetched = True
+                break
+            except Exception:
+                continue
+        if not fetched:
+            output.append({**group_meta, "users": [], "fetch_error": True})
+    return output
 
 
 async def user_exists_by_email(email: str) -> bool:

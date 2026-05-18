@@ -41,6 +41,7 @@ async def _fetch_groups() -> list[dict]:
             "name": g.get("name", ""),
             "friendly_name": g.get("friendlyName", ""),
             "members": active_members,
+            "fetch_error": g.get("fetch_error", False),
         })
 
     groups.sort(key=lambda g: g["friendly_name"].lower() or g["name"].lower())

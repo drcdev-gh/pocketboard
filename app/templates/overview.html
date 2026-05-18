@@ -29,7 +29,9 @@
       <span class="text-muted" style="font-weight:400;font-size:0.875rem">({{ group.members | length }} active member{{ 's' if group.members | length != 1 else '' }})</span>
     </h2>
 
-    {% if group.members %}
+    {% if group.fetch_error %}
+    <div class="alert alert-error" style="margin-bottom:0">Could not load member data for this group. It will be retried on the next refresh.</div>
+    {% elif group.members %}
     <div class="card table-card">
       <table class="table">
         <thead>
