@@ -37,6 +37,7 @@ services:
       # Audit log access (optional)
       AUDIT_LOG_GROUPS: ${AUDIT_LOG_GROUPS:-}
       AUDIT_LOG_CLEAR_GROUPS: ${AUDIT_LOG_CLEAR_GROUPS:-}
+      EMAIL_TEMPLATE_GROUPS: ${EMAIL_TEMPLATE_GROUPS:-}
       ORG_OVERVIEW_GROUPS: ${ORG_OVERVIEW_GROUPS:-}
       # Default pre-selected groups in the invite form (optional)
       DEFAULT_SELECTED_GROUPS: ${DEFAULT_SELECTED_GROUPS:-}

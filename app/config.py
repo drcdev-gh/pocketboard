@@ -38,6 +38,13 @@ class Config:
         self.audit_log_clear_groups_raw = os.environ.get("AUDIT_LOG_CLEAR_GROUPS", "")
         self.org_overview_groups_raw = os.environ.get("ORG_OVERVIEW_GROUPS", "")
         self.default_selected_groups_raw = os.environ.get("DEFAULT_SELECTED_GROUPS", "")
+        self.email_template_groups_raw = os.environ.get("EMAIL_TEMPLATE_GROUPS", "")
+
+    @property
+    def email_template_groups(self) -> List[str]:
+        if not self.email_template_groups_raw:
+            return []
+        return [g.strip() for g in self.email_template_groups_raw.split(",") if g.strip()]
 
     @property
     def invite_ttl_seconds(self) -> int:

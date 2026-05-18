@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Email Template – Pocketboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Invitation Email Template</h1>
+  <p class="text-muted">Customise the body of the invitation email sent to new members.</p>
+</div>
+
+{% if access_denied %}
+<div class="alert alert-error">You do not have permission to edit the email template. Contact your IT administrator.</div>
+
+{% else %}
+
+{% set saved = request.query_params.get('saved') %}
+{% set reset = request.query_params.get('reset') %}
+{% if saved %}
+<div class="alert alert-success">Template saved successfully.</div>
+{% endif %}
+{% if reset %}
+<div class="alert alert-success">Template reset to default.</div>
+{% endif %}
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:1.5rem;padding:20px">
+  <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:12px">Available placeholders</h3>
+  <table class="table" style="font-size:0.85rem">
+    <thead>
+      <tr>
+        <th>Placeholder</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="font-family:monospace">{to_name}</td><td>Invitee's full name</td></tr>
+      <tr>
+        <td style="font-family:monospace">{org_email}</td>
+        <td>Their new organisation email address <span style="color:var(--red);font-weight:600">⚠ required</span></td>
+      </tr>
+      <tr>
+        <td style="font-family:monospace">{invite_url}</td>
+        <td>The account setup link <span style="color:var(--red);font-weight:600">⚠ required</span></td>
+      </tr>
+      <tr><td style="font-family:monospace">{group_list}</td><td>Comma-separated list of assigned groups</td></tr>
+      <tr><td style="font-family:monospace">{org_domain}</td><td>The organisation email domain</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<form method="post" action="/email-template" class="card form-card" style="max-width:680px">
+  <div class="form-group">
+    <label for="template_body">
+      Email body
+      {% if current_template %}
+      <span class="hint">(custom template active)</span>
+      {% else %}
+      <span class="hint">(showing default — edit to customise)</span>
+      {% endif %}
+    </label>
+    <textarea id="template_body" name="template_body" rows="20"
+              style="width:100%;font-family:monospace;font-size:0.875rem;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical"
+              required>{{ submitted_body if submitted_body is defined else (current_template or default_template) }}</textarea>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <button type="submit" class="btn btn-primary">Save template</button>
+    {% if current_template %}
+    <button type="button" onclick="document.getElementById('reset-form').submit()" class="btn btn-secondary">Reset to default</button>
+    {% endif %}
+  </div>
+</form>
+
+{% if current_template %}
+<form id="reset-form" method="post" action="/email-template/reset" style="display:none"></form>
+{% endif %}
+
+{% endif %}
+{% endblock %}

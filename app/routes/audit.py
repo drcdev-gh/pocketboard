@@ -40,7 +40,7 @@ async def audit_log(request: Request, page: int = 1):
     offset = (page - 1) * page_size
 
     async with get_db() as db:
-        async with db.execute("SELECT COUNT(*) FROM audit_log WHERE status != 'log_cleared'") as cur:
+        async with db.execute("SELECT COUNT(*) FROM audit_log WHERE status NOT IN ('log_cleared', 'template_changed')") as cur:
             total = (await cur.fetchone())[0]
 
         async with db.execute(

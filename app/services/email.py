@@ -1,6 +1,7 @@
 import aiosmtplib
 from email.mime.text import MIMEText
 from app.config import config
+from app.database import get_db
 
 DEFAULT_TEMPLATE = """Hello {to_name},
 
@@ -20,6 +21,20 @@ The IT Team
 """
 
 
+async def _get_template() -> str:
+    try:
+        async with get_db() as db:
+            async with db.execute(
+                "SELECT value FROM settings WHERE key = 'email_template'"
+            ) as cur:
+                row = await cur.fetchone()
+        if row:
+            return row[0]
+    except Exception:
+        pass
+    return config.onboarding_template or DEFAULT_TEMPLATE
+
+
 async def send_invite_email(
     to_email: str,
     to_name: str,
@@ -28,7 +43,7 @@ async def send_invite_email(
     groups: list[str],
 ) -> None:
     group_list = ", ".join(groups) if groups else "—"
-    template = config.onboarding_template or DEFAULT_TEMPLATE
+    template = await _get_template()
     body = template.format(
         to_name=to_name,
         org_email=org_email,

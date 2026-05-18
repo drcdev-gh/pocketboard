@@ -43,8 +43,10 @@
           <div>{{ e.created_by_name }}</div>
           <div class="text-muted small">{{ e.created_by_email }}</div>
         </td>
-        {% if e.status == 'log_cleared' %}
-        <td colspan="3" class="text-muted">— audit log cleared —</td>
+        {% if e.status in ('log_cleared', 'template_changed') %}
+        <td colspan="3" class="text-muted">
+          {% if e.status == 'log_cleared' %}— audit log cleared —{% else %}— invitation email template updated —{% endif %}
+        </td>
         {% else %}
         <td>
           <div>{{ e.invitee_name }}</div>
@@ -58,7 +60,7 @@
         </td>
         {% endif %}
         <td>
-          {% set status_labels = {"sent": "Sent", "email_failed": "Email failed", "log_cleared": "Log cleared"} %}
+          {% set status_labels = {"sent": "Sent", "email_failed": "Email failed", "log_cleared": "Log cleared", "template_changed": "Template changed"} %}
           <span class="status status-{{ e.status }}">{{ status_labels.get(e.status, e.status) }}</span>
           {% if e.invite_expired %}
           <div style="margin-top:4px"><span class="badge badge-expired">Expired</span></div>
