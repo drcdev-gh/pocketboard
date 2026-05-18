@@ -67,6 +67,7 @@
                         data-name="{{ member.displayName }}"
                         data-email="{{ member.email or '' }}"
                         data-username="{{ member.username }}"
+                        data-userid="{{ member.id }}"
                         data-activity="{{ member.lastActivity or '' }}"
                         data-badges="{{ member.badges | tojson_attr }}"
                         data-groups="{{ member.groupNames | tojson_attr }}"
@@ -118,13 +119,19 @@
 
   const modal = document.getElementById('member-detail-modal');
 
+  function initials(name) {
+    return (name || '').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+  }
+
   document.querySelectorAll('.member-detail-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const badges = JSON.parse(btn.dataset.badges || '[]');
       const groups = JSON.parse(btn.dataset.groups || '[]');
       const disabled = btn.dataset.disabled === 'true';
+      const name = btn.dataset.name || '';
+      const avatarUrl = `{{ pocketid_base_url }}/api/users/${btn.dataset.userid}/profile-picture.png`;
 
-      document.getElementById('member-detail-title').textContent = btn.dataset.name || 'Member details';
+      document.getElementById('member-detail-title').textContent = name || 'Member details';
 
       const badgeHtml = badges.length
         ? badges.map(b => `<span class="badge ${b.color}">${b.label}</span>`).join(' ')
@@ -135,8 +142,18 @@
       const disabledHtml = disabled ? ' <span class="badge badge-expired">Disabled</span>' : '';
 
       document.getElementById('member-detail-content').innerHTML = `
-        <div class="modal-field"><span class="label">Name</span>${btn.dataset.name}${disabledHtml}</div>
-        <div class="modal-field"><span class="label">Email</span>${btn.dataset.email || '—'}</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+          <div style="position:relative;width:52px;height:52px;flex-shrink:0">
+            <img src="${avatarUrl}" alt="${name}"
+                 style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--border)"
+                 onerror="this.style.display='none';document.getElementById('member-avatar-fallback').style.display='flex'">
+            <div id="member-avatar-fallback" style="display:none;width:52px;height:52px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:1.1rem;align-items:center;justify-content:center">${initials(name)}</div>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:1rem">${name}${disabledHtml}</div>
+            <div style="color:var(--muted);font-size:0.85rem">${btn.dataset.email || ''}</div>
+          </div>
+        </div>
         <div class="modal-field"><span class="label">Username</span><span style="font-family:monospace">${btn.dataset.username}</span></div>
         <div class="modal-field"><span class="label">Badges</span>${badgeHtml}</div>
         <div class="modal-field"><span class="label">Last activity</span>${fmtActivity(btn.dataset.activity)}</div>
