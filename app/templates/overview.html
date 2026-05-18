@@ -26,6 +26,7 @@
     <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:12px">
       <span class="text-muted" style="font-weight:400">[{{ group.name }}]</span>
       {{ group.friendly_name or group.name }}
+      {% if group.badge %}<span class="badge {{ group.badge.color }}" style="font-size:0.75rem;vertical-align:middle">{{ group.badge.label }}</span>{% endif %}
       <span class="text-muted" style="font-weight:400;font-size:0.875rem">({{ group.members | length }} active member{{ 's' if group.members | length != 1 else '' }})</span>
     </h2>
 

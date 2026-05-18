@@ -63,11 +63,14 @@ async def _fetch_groups() -> list[dict]:
                 u["badges"] = []
             active_members.append(u)
         active_members.sort(key=lambda u: u.get("lastActivity") or "", reverse=True)
+        gname = g.get("name", "")
+        group_badge_label = badge_map.get(gname)
         groups.append({
-            "name": g.get("name", ""),
+            "name": gname,
             "friendly_name": g.get("friendlyName", ""),
             "members": active_members,
             "fetch_error": g.get("fetch_error", False),
+            "badge": {"label": group_badge_label, "color": _badge_color_class(group_badge_label)} if group_badge_label else None,
         })
 
     groups.sort(key=lambda g: g["friendly_name"].lower() or g["name"].lower())
