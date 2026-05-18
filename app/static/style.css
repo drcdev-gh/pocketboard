@@ -34,6 +34,7 @@
 [data-theme="dark"] .alert-warning { background: rgba(251,191,36,.12);  border-color: #fbbf24; }
 [data-theme="dark"] .badge         { background: rgba(96,165,250,.15); border-color: rgba(96,165,250,.3); }
 [data-theme="dark"] .badge-pending { background: rgba(251,191,36,.15); border-color: rgba(251,191,36,.4); color: #fbbf24; }
+[data-theme="dark"] .badge-expired { background: rgba(248,113,113,.15); border-color: rgba(248,113,113,.4); color: #f87171; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -309,6 +310,7 @@ body {
 .status-failed { color: var(--red); }
 .status-log_cleared { color: var(--muted); }
 .badge-pending { background:#fffbeb; color:#92400e; border-color:#fcd34d; }
+.badge-expired { background:#fef2f2; color:#c81e1e; border-color:#fca5a5; }
 
 /* ── Pagination ── */
 .pagination {

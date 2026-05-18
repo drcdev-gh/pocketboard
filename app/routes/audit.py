@@ -1,10 +1,12 @@
 import json
 import uuid
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from starlette.responses import RedirectResponse
 
 from app.auth import get_current_user
+from app.config import config
 from app.database import get_db
 from app.templating import templates, user_can_audit, user_can_clear_audit
 from app.services import pocketid as pid_svc
@@ -51,6 +53,9 @@ async def audit_log(request: Request, page: int = 1):
         ) as cur:
             rows = await cur.fetchall()
 
+    ttl = timedelta(seconds=config.invite_ttl_seconds)
+    now = datetime.now(timezone.utc)
+
     entries = []
     for row in rows:
         entry = dict(row)
@@ -58,10 +63,21 @@ async def audit_log(request: Request, page: int = 1):
             entry["groups"] = json.loads(entry["groups"])
         except (json.JSONDecodeError, TypeError):
             entry["groups"] = []
-        entry["pending_registration"] = (
+        unregistered = (
             entry["status"] in ("sent", "email_failed")
             and entry["invitee_email"].lower() not in registered_emails
         )
+        entry["pending_registration"] = False
+        entry["invite_expired"] = False
+        if unregistered:
+            try:
+                created = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
+                if created + ttl < now:
+                    entry["invite_expired"] = True
+                else:
+                    entry["pending_registration"] = True
+            except Exception:
+                entry["pending_registration"] = True
         entries.append(entry)
 
     total_pages = max(1, (total + page_size - 1) // page_size)

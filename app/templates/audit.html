@@ -8,7 +8,12 @@
 </div>
 
 <div class="alert alert-warning">
-  In case there are any issues with one of the invites, please contact your IT support team and mention the ID shown in the audit log.
+  <strong>Invite status guide:</strong>
+  <ul style="margin-top:6px;margin-left:16px;line-height:1.8">
+    <li><strong>Not yet registered</strong> — invite sent and link is still valid; the member has not yet completed account setup.</li>
+    <li><strong>Expired</strong> — the invite link has timed out and the member has not registered. Note: their email mailbox may have been created, but no account exists in the ID management system. Contact your IT administrator if this needs to be resolved.</li>
+  </ul>
+  <p style="margin-top:8px">If you need to report an issue, mention the ID shown in the table to your IT support team.</p>
 </div>
 
 {% if access_denied %}
@@ -55,7 +60,9 @@
         <td>
           {% set status_labels = {"sent": "Sent", "email_failed": "Email failed", "log_cleared": "Log cleared"} %}
           <span class="status status-{{ e.status }}">{{ status_labels.get(e.status, e.status) }}</span>
-          {% if e.pending_registration %}
+          {% if e.invite_expired %}
+          <div style="margin-top:4px"><span class="badge badge-expired">Expired</span></div>
+          {% elif e.pending_registration %}
           <div style="margin-top:4px"><span class="badge badge-pending">Not yet registered</span></div>
           {% endif %}
           {% if e.error_message %}

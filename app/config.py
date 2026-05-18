@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Dict, List
 
 
@@ -37,6 +38,15 @@ class Config:
         self.audit_log_clear_groups_raw = os.environ.get("AUDIT_LOG_CLEAR_GROUPS", "")
         self.org_overview_groups_raw = os.environ.get("ORG_OVERVIEW_GROUPS", "")
         self.default_selected_groups_raw = os.environ.get("DEFAULT_SELECTED_GROUPS", "")
+
+    @property
+    def invite_ttl_seconds(self) -> int:
+        """Parse Go duration string (e.g. '168h', '30m', '1h30m') into seconds."""
+        total = sum(
+            int(v) * {"h": 3600, "m": 60, "s": 1}[u]
+            for v, u in re.findall(r"(\d+)([hms])", self.invite_ttl)
+        )
+        return total or 7 * 86400  # fallback: 7 days
 
     @property
     def audit_log_groups(self) -> List[str]:
