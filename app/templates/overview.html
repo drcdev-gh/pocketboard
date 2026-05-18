@@ -21,8 +21,21 @@
   <p>No groups found or the ID management system could not be reached.</p>
 </div>
 {% else %}
+  <div class="card" style="padding:16px 20px;margin-bottom:1.5rem">
+    <p style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:10px">Navigate to</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      {% for group in groups %}
+      <a href="#group-{{ loop.index }}" style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border:1px solid var(--border);border-radius:999px;font-size:0.85rem;text-decoration:none;color:var(--text);background:var(--bg);transition:background .15s">
+        {% if group.badge %}<span class="badge {{ group.badge.color }}" style="font-size:0.7rem;padding:1px 5px">{{ group.badge.label }}</span>{% endif %}
+        {{ group.friendly_name or group.name }}
+        <span style="color:var(--muted);font-size:0.8rem">{{ group.members | length }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
   {% for group in groups %}
-  <div style="margin-bottom:2rem">
+  <div id="group-{{ loop.index }}" style="margin-bottom:2rem">
     <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:12px">
       <span class="text-muted" style="font-weight:400">[{{ group.name }}]</span>
       {{ group.friendly_name or group.name }}
