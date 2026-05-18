@@ -35,7 +35,7 @@ async def _fetch_groups() -> list[dict]:
                 continue
             u["lastActivity"] = last_activity.get(u["id"])
             active_members.append(u)
-        active_members.sort(key=lambda u: u.get("displayName", "").lower())
+        active_members.sort(key=lambda u: u.get("lastActivity") or "", reverse=True)
         groups.append({
             "name": g.get("friendlyName") or g.get("name", ""),
             "members": active_members,
