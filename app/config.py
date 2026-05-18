@@ -34,12 +34,19 @@ class Config:
         self.onboarding_template = os.environ.get("ONBOARDING_TEMPLATE", "")
         self.audit_log_groups_raw = os.environ.get("AUDIT_LOG_GROUPS", "")
         self.audit_log_clear_groups_raw = os.environ.get("AUDIT_LOG_CLEAR_GROUPS", "")
+        self.default_selected_groups_raw = os.environ.get("DEFAULT_SELECTED_GROUPS", "")
 
     @property
     def audit_log_groups(self) -> List[str]:
         if not self.audit_log_groups_raw:
             return []
         return [g.strip() for g in self.audit_log_groups_raw.split(",") if g.strip()]
+
+    @property
+    def default_selected_groups(self) -> List[str]:
+        if not self.default_selected_groups_raw:
+            return []
+        return [g.strip() for g in self.default_selected_groups_raw.split(",") if g.strip()]
 
     @property
     def audit_log_clear_groups(self) -> List[str]:

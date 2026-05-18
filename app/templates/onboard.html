@@ -58,7 +58,8 @@
     <div class="checkbox-group">
       {% for group in group_options %}
       <label class="checkbox-label">
-        <input type="checkbox" name="selected_groups" value="{{ group.name }}">
+        <input type="checkbox" name="selected_groups" value="{{ group.name }}"
+               {% if group.name in checked_groups %}checked{% endif %}>
         {{ group.name }}
       </label>
       {% endfor %}

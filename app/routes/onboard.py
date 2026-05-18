@@ -22,6 +22,7 @@ async def index(request: Request):
         return RedirectResponse(url="/login", status_code=302)
 
     allowed_groups = config.allowed_target_groups(user["groups"])
+    default_groups = [g for g in allowed_groups if g in config.default_selected_groups]
 
     # Fetch PocketID groups to get display names
     try:
@@ -35,6 +36,7 @@ async def index(request: Request):
         "user": user,
         "group_options": group_options,
         "migadu_domain": config.migadu_domain,
+        "checked_groups": default_groups,
         "message": None,
         "error": None,
         "form": {},
@@ -60,6 +62,7 @@ async def create_invite(
     }
 
     allowed_groups = config.allowed_target_groups(user["groups"])
+    default_groups = [g for g in allowed_groups if g in config.default_selected_groups]
 
     fetched_groups: list[dict] | None = None
     try:
@@ -68,12 +71,13 @@ async def create_invite(
     except Exception:
         group_options = [{"id": name, "name": name} for name in allowed_groups]
 
-    def render(*, message=None, error=None, warning=None, form=form_data):
+    def render(*, message=None, error=None, warning=None, form=form_data, checked_groups=selected_groups):
         return templates.TemplateResponse("onboard.html", {
             "request": request,
             "user": user,
             "group_options": group_options,
             "migadu_domain": config.migadu_domain,
+            "checked_groups": checked_groups,
             "message": message,
             "warning": warning,
             "error": error,
@@ -174,6 +178,7 @@ async def create_invite(
                 f"Invite link: {invite_url}"
             ),
             form={},
+            checked_groups=default_groups,
         )
 
     async with get_db() as db:
@@ -197,4 +202,5 @@ async def create_invite(
             f"Groups assigned: {group_list}."
         ),
         form={},
+        checked_groups=default_groups,
     )
