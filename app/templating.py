@@ -14,9 +14,17 @@ def user_can_audit(user: dict) -> bool:
 def user_can_clear_audit(user: dict) -> bool:
     groups = config.audit_log_clear_groups
     if not groups:
-        return False  # default deny — must be explicitly configured
+        return False
+    return bool(set(user.get("groups", [])) & set(groups))
+
+
+def user_can_overview(user: dict) -> bool:
+    groups = config.org_overview_groups
+    if not groups:
+        return False
     return bool(set(user.get("groups", [])) & set(groups))
 
 
 templates.env.globals["user_can_audit"] = user_can_audit
 templates.env.globals["user_can_clear_audit"] = user_can_clear_audit
+templates.env.globals["user_can_overview"] = user_can_overview

@@ -35,6 +35,7 @@ class Config:
         self.invite_email_subject = os.environ.get("INVITE_EMAIL_SUBJECT", "Your organisation account invitation")
         self.audit_log_groups_raw = os.environ.get("AUDIT_LOG_GROUPS", "")
         self.audit_log_clear_groups_raw = os.environ.get("AUDIT_LOG_CLEAR_GROUPS", "")
+        self.org_overview_groups_raw = os.environ.get("ORG_OVERVIEW_GROUPS", "")
         self.default_selected_groups_raw = os.environ.get("DEFAULT_SELECTED_GROUPS", "")
 
     @property
@@ -48,6 +49,12 @@ class Config:
         if not self.default_selected_groups_raw:
             return []
         return [g.strip() for g in self.default_selected_groups_raw.split(",") if g.strip()]
+
+    @property
+    def org_overview_groups(self) -> List[str]:
+        if not self.org_overview_groups_raw:
+            return []
+        return [g.strip() for g in self.org_overview_groups_raw.split(",") if g.strip()]
 
     @property
     def audit_log_clear_groups(self) -> List[str]:

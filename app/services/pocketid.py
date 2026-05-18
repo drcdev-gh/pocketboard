@@ -1,3 +1,4 @@
+import asyncio
 import httpx
 from app.config import config
 
@@ -57,6 +58,26 @@ async def create_signup_token(group_ids: list[str]) -> dict:
         )
         resp.raise_for_status()
         return resp.json()
+
+
+async def get_group_with_members(group_id: str) -> dict:
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{_BASE}/user-groups/{group_id}",
+            headers=_HEADERS,
+            timeout=15,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def get_all_groups_with_members() -> list[dict]:
+    groups = await list_groups()
+    results = await asyncio.gather(
+        *[get_group_with_members(g["id"]) for g in groups],
+        return_exceptions=True,
+    )
+    return [r for r in results if isinstance(r, dict)]
 
 
 async def user_exists_by_email(email: str) -> bool:
