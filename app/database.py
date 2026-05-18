@@ -50,3 +50,7 @@ async def init_db():
         if "invite_id" not in columns:
             await db.execute("ALTER TABLE audit_log ADD COLUMN invite_id TEXT")
             await db.commit()
+
+        if "reminder_sent_at" not in columns:
+            await db.execute("ALTER TABLE audit_log ADD COLUMN reminder_sent_at TEXT")
+            await db.commit()

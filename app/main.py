@@ -7,18 +7,21 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import config
 from app.database import init_db
 from app.routes import auth, onboard, audit, overview, template
+from app.services import reminders
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    task = asyncio.create_task(overview.background_refresh_loop())
+    overview_task = asyncio.create_task(overview.background_refresh_loop())
+    reminder_task = asyncio.create_task(reminders.background_reminder_loop())
     yield
-    task.cancel()
-    try:
-        await task
-    except asyncio.CancelledError:
-        pass
+    for task in (overview_task, reminder_task):
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(title="Pocketboard", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
