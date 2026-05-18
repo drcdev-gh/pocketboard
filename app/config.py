@@ -37,6 +37,21 @@ class Config:
         self.org_overview_groups_raw = os.environ.get("ORG_OVERVIEW_GROUPS", "")
         self.default_selected_groups_raw = os.environ.get("DEFAULT_SELECTED_GROUPS", "")
         self.email_template_groups_raw = os.environ.get("EMAIL_TEMPLATE_GROUPS", "")
+        self.badge_mappings_raw = os.environ.get("BADGE_MAPPINGS", "")
+
+    @property
+    def badge_mappings(self) -> Dict[str, str]:
+        """Parse BADGE_MAPPINGS: 'Group Name=BADGE;Another=BADGE2' → {group: badge}"""
+        result: Dict[str, str] = {}
+        if not self.badge_mappings_raw:
+            return result
+        for entry in self.badge_mappings_raw.split(";"):
+            entry = entry.strip()
+            if "=" not in entry:
+                continue
+            group, badge = entry.split("=", 1)
+            result[group.strip()] = badge.strip()
+        return result
 
     @property
     def email_template_groups(self) -> List[str]:

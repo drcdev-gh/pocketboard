@@ -5,8 +5,13 @@ from fastapi.responses import HTMLResponse
 from starlette.responses import RedirectResponse
 
 from app.auth import get_current_user
+from app.config import config
 from app.templating import templates, user_can_overview
 from app.services import pocketid as pid_svc
+
+
+def _badge_color_class(label: str) -> str:
+    return f"badge-color-{sum(ord(c) for c in label) % 8}"
 
 router = APIRouter()
 
@@ -28,6 +33,8 @@ async def _fetch_groups() -> list[dict]:
     }
     last_activity, oldest_seen = await pid_svc.get_last_activity(expected_user_ids=user_ids)
 
+    badge_map = config.badge_mappings
+
     groups = []
     for g in raw_groups:
         active_members = []
@@ -35,6 +42,15 @@ async def _fetch_groups() -> list[dict]:
             if u.get("disabled", False):
                 continue
             u["lastActivity"] = last_activity.get(u["id"])
+            if badge_map:
+                user_group_names = {ug.get("name") for ug in u.get("userGroups", [])}
+                u["badges"] = [
+                    {"label": badge, "color": _badge_color_class(badge)}
+                    for group_name, badge in badge_map.items()
+                    if group_name in user_group_names
+                ]
+            else:
+                u["badges"] = []
             active_members.append(u)
         active_members.sort(key=lambda u: u.get("lastActivity") or "", reverse=True)
         groups.append({
@@ -87,4 +103,5 @@ async def org_overview(request: Request):
         "access_denied": False,
         "groups": _cache or [],
         "oldest_activity": _cache_oldest[:10] if _cache_oldest else None,
+        "show_badges": bool(config.badge_mappings),
     })

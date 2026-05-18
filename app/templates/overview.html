@@ -39,6 +39,7 @@
             <th>Name</th>
             <th>Email</th>
             <th>Username</th>
+            {% if show_badges %}<th>Badges</th>{% endif %}
             <th>Last activity (UTC)</th>
           </tr>
         </thead>
@@ -48,6 +49,13 @@
             <td>{{ member.displayName }}</td>
             <td>{{ member.email or '—' }}</td>
             <td class="text-muted" style="font-size:0.85rem">{{ member.username }}</td>
+            {% if show_badges %}
+            <td>
+              {% for badge in member.badges %}
+              <span class="badge {{ badge.color }}">{{ badge.label }}</span>
+              {% endfor %}
+            </td>
+            {% endif %}
             <td class="nowrap text-muted" style="font-size:0.85rem">
               {{ member.lastActivity[:16].replace('T', ' ') if member.lastActivity else '—' }}
             </td>

@@ -41,6 +41,7 @@ services:
       ORG_OVERVIEW_GROUPS: ${ORG_OVERVIEW_GROUPS:-}
       # Default pre-selected groups in the invite form (optional)
       DEFAULT_SELECTED_GROUPS: ${DEFAULT_SELECTED_GROUPS:-}
+      BADGE_MAPPINGS: ${BADGE_MAPPINGS:-}
 
 volumes:
   pocketboard_data:
