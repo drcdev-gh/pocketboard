@@ -70,8 +70,14 @@ _ACTIVITY_EVENTS = {
 }
 
 
-async def get_last_activity(limit: int = 500) -> dict[str, str]:
-    """Return {user_id: createdAt} for the most recent activity event per user."""
+async def get_last_activity(
+    limit: int = 500,
+    expected_user_ids: set[str] | None = None,
+) -> dict[str, str]:
+    """Return {user_id: createdAt} for the most recent activity event per user.
+
+    Stops early once all expected_user_ids have been found.
+    """
     last_seen: dict[str, str] = {}
     page = 1
     fetched = 0
@@ -101,6 +107,8 @@ async def get_last_activity(limit: int = 500) -> dict[str, str]:
                         last_seen[uid] = entry.get("createdAt", "")
             fetched += len(items)
             if len(items) < batch:
+                break
+            if expected_user_ids and expected_user_ids.issubset(last_seen.keys()):
                 break
             page += 1
     return last_seen

@@ -46,7 +46,7 @@
               {% endfor %}
             </td>
             <td class="nowrap text-muted" style="font-size:0.85rem">
-              {{ member.lastSignIn[:16].replace('T', ' ') if member.lastSignIn else '—' }}
+              {{ member.lastActivity[:16].replace('T', ' ') if member.lastActivity else '—' }}
             </td>
             <td>
               {% if member.isAdmin %}
