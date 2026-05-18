@@ -60,6 +60,42 @@ async def create_signup_token(group_ids: list[str]) -> dict:
         return resp.json()
 
 
+async def get_last_sign_ins(limit: int = 500) -> dict[str, str]:
+    """Return {user_id: createdAt} for the most recent SIGN_IN per user."""
+    last_seen: dict[str, str] = {}
+    page = 1
+    fetched = 0
+    async with httpx.AsyncClient() as client:
+        while fetched < limit:
+            batch = min(100, limit - fetched)
+            resp = await client.get(
+                f"{_BASE}/audit-logs/all",
+                headers=_HEADERS,
+                params={
+                    "pagination[page]": page,
+                    "pagination[limit]": batch,
+                    "sort[column]": "createdAt",
+                    "sort[direction]": "desc",
+                },
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            items = data.get("data", data) if isinstance(data, dict) else data
+            if not items:
+                break
+            for entry in items:
+                if entry.get("event") == "SIGN_IN":
+                    uid = entry.get("userID")
+                    if uid and uid not in last_seen:
+                        last_seen[uid] = entry.get("createdAt", "")
+            fetched += len(items)
+            if len(items) < batch:
+                break
+            page += 1
+    return last_seen
+
+
 async def get_group_with_members(group_id: str) -> dict:
     async with httpx.AsyncClient() as client:
         resp = await client.get(

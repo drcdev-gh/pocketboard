@@ -29,6 +29,7 @@
             <th>Email</th>
             <th>Username</th>
             <th>Other groups</th>
+            <th>Last sign-in (UTC)</th>
             <th>Admin</th>
           </tr>
         </thead>
@@ -43,6 +44,9 @@
               {% for g in other_groups %}
               <span class="badge">{{ g.friendlyName or g.name }}</span>
               {% endfor %}
+            </td>
+            <td class="nowrap text-muted" style="font-size:0.85rem">
+              {{ member.lastSignIn[:16].replace('T', ' ') if member.lastSignIn else '—' }}
             </td>
             <td>
               {% if member.isAdmin %}

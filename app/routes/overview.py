@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from starlette.responses import RedirectResponse
@@ -24,16 +25,21 @@ async def org_overview(request: Request):
         }, status_code=403)
 
     try:
-        raw_groups = await pid_svc.get_all_groups_with_members()
+        raw_groups, last_sign_ins = await asyncio.gather(
+            pid_svc.get_all_groups_with_members(),
+            pid_svc.get_last_sign_ins(),
+        )
     except Exception:
-        raw_groups = []
+        raw_groups, last_sign_ins = [], {}
 
     groups = []
     for g in raw_groups:
-        active_members = [
-            u for u in g.get("users", [])
-            if not u.get("disabled", False)
-        ]
+        active_members = []
+        for u in g.get("users", []):
+            if u.get("disabled", False):
+                continue
+            u["lastSignIn"] = last_sign_ins.get(u["id"])
+            active_members.append(u)
         active_members.sort(key=lambda u: u.get("displayName", "").lower())
         groups.append({
             "name": g.get("friendlyName") or g.get("name", ""),
