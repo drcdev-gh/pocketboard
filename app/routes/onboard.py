@@ -24,10 +24,11 @@ async def index(request: Request):
     allowed_groups = config.allowed_target_groups(user["groups"])
     default_groups = [g for g in allowed_groups if g in config.default_selected_groups]
 
-    # Fetch PocketID groups to get display names
+    # Fetch PocketID groups to get display names, preserving config-defined order
     try:
         all_groups = await pid_svc.list_groups()
-        group_options = [g for g in all_groups if g["name"] in allowed_groups]
+        by_name = {g["name"]: g for g in all_groups}
+        group_options = [by_name[name] for name in allowed_groups if name in by_name]
     except Exception:
         group_options = [{"id": name, "name": name} for name in allowed_groups]
 
@@ -67,7 +68,8 @@ async def create_invite(
     fetched_groups: list[dict] | None = None
     try:
         fetched_groups = await pid_svc.list_groups()
-        group_options = [g for g in fetched_groups if g["name"] in allowed_groups]
+        by_name = {g["name"]: g for g in fetched_groups}
+        group_options = [by_name[name] for name in allowed_groups if name in by_name]
     except Exception:
         group_options = [{"id": name, "name": name} for name in allowed_groups]
 
