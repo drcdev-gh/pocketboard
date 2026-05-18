@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
-from app.auth import oauth, get_current_user
+from app.auth import oauth, get_current_user, SESSION_MAX_AGE
 from app.config import config
 
 router = APIRouter()
@@ -20,7 +20,7 @@ async def login_page(request: Request):
 @router.get("/login/start")
 async def login_start(request: Request):
     redirect_uri = f"{config.app_base_url}/auth/callback"
-    return await oauth.pocketid.authorize_redirect(request, redirect_uri)
+    return await oauth.pocketid.authorize_redirect(request, redirect_uri, max_age=SESSION_MAX_AGE)
 
 
 @router.get("/auth/callback")
@@ -33,12 +33,14 @@ async def auth_callback(request: Request):
     if isinstance(groups, str):
         groups = [g.strip() for g in groups.split(",") if g.strip()]
 
+    import time
     request.session["user"] = {
         "sub": userinfo["sub"],
         "email": userinfo.get("email", ""),
         "name": userinfo.get("name", userinfo.get("email", "Unknown")),
         "groups": groups,
     }
+    request.session["auth_time"] = time.time()
     return RedirectResponse(url="/", status_code=302)
 
 

@@ -27,7 +27,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=config.app_secret_key,
     session_cookie="pocketboard_session",
-    max_age=86400 * 7,
+    max_age=86400 * 2,  # cookie lifetime — actual session enforced to 24h in get_current_user
     https_only=True,
     same_site="lax",
 )
