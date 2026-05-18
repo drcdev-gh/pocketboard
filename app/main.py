@@ -28,7 +28,7 @@ app.add_middleware(
     secret_key=config.app_secret_key,
     session_cookie="pocketboard_session",
     max_age=86400 * 7,
-    https_only=False,  # set True behind TLS in production
+    https_only=True,
     same_site="lax",
 )
 
