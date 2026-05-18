@@ -3,13 +3,12 @@
 {% block content %}
 <div class="page-header">
   <h1>Organisation Overview</h1>
-  <p class="text-muted">Active members per group, fetched live from the ID management system.</p>
-  <p style="color:var(--red);font-size:0.8rem;margin-top:4px">
-    This page is refreshed every 12 hours.
+  <p class="text-muted">Active members per group, sourced from the ID management system. This page is cached and refreshed every 12 hours.</p>
+  <p style="color:var(--red);font-size:0.8rem;margin-top:6px">
+    Note: "Last activity" reflects when a member last signed in or authorised an application.
+    Since sessions can remain active for extended periods, members who are actively using their account may still show an older date.
     {% if oldest_activity %}
-      Activities before {{ oldest_activity }} are not considered.
-    {% else %}
-      Activity older than the tracked window may not be shown.
+      Activity before {{ oldest_activity }} is not tracked.
     {% endif %}
   </p>
 </div>
