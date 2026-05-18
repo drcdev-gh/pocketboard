@@ -17,7 +17,8 @@
   {% for group in groups %}
   <div style="margin-bottom:2rem">
     <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:12px">
-      {{ group.name }}
+      <span class="text-muted" style="font-weight:400">[{{ group.name }}]</span>
+      {{ group.friendly_name or group.name }}
       <span class="text-muted" style="font-weight:400;font-size:0.875rem">({{ group.members | length }} active member{{ 's' if group.members | length != 1 else '' }})</span>
     </h2>
 
