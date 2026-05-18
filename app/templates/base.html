@@ -7,9 +7,10 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="navbar">
+  <header class="navbar" id="navbar">
     <span class="navbar-brand">Pocketboard</span>
     {% if user %}
+    <button class="navbar-toggle" id="navbar-toggle" aria-label="Toggle menu">&#9776;</button>
     <nav class="navbar-nav">
       <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">New Invite</a>
       {% if user_can_audit(user) %}<a href="/audit" class="{% if request.url.path == '/audit' %}active{% endif %}">Audit Log</a>{% endif %}
@@ -21,6 +22,14 @@
     </div>
     {% endif %}
   </header>
+  <script>
+    const toggle = document.getElementById('navbar-toggle');
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        document.getElementById('navbar').classList.toggle('open');
+      });
+    }
+  </script>
 
   <main class="{% block container_class %}container{% endblock %}">
     {% block content %}{% endblock %}
