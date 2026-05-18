@@ -295,6 +295,40 @@ body {
 .text-muted { color: var(--muted); }
 .small { font-size: 0.8rem; }
 
+/* ── Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  padding: 28px;
+  width: 100%;
+  max-width: 440px;
+  margin: 20px;
+}
+.modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+.modal-field { margin-bottom: 10px; font-size: 0.9rem; }
+.modal-field .label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  display: block;
+  margin-bottom: 2px;
+}
+.modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+
 /* ── Login page ── */
 .login-page {
   min-height: 100vh;

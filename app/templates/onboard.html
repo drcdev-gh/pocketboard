@@ -68,10 +68,24 @@
   </div>
 
   <button type="submit" id="submit-btn" class="btn btn-primary">Send Invite</button>
-  <p id="loading-msg" style="display:none;margin-top:1rem;font-weight:500;color:#555">
+  <p id="loading-msg" style="display:none;margin-top:1rem;font-weight:500;color:var(--muted)">
     ⏳ Sending — this may take a few seconds. Please do not close or refresh this page.
   </p>
 </form>
+
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <h3>Please confirm</h3>
+    <div class="modal-field"><span class="label">Full name</span><strong id="confirm-name"></strong></div>
+    <div class="modal-field"><span class="label">Personal email</span><span id="confirm-email"></span></div>
+    <div class="modal-field"><span class="label">Organisation email</span><span id="confirm-org"></span></div>
+    <div class="modal-field"><span class="label">Groups</span><span id="confirm-groups"></span></div>
+    <div class="modal-actions">
+      <button id="confirm-no" class="btn btn-secondary">Cancel</button>
+      <button id="confirm-yes" class="btn btn-primary">Confirm — Send Invite</button>
+    </div>
+  </div>
+</div>
 {% endif %}
 
 <script>
@@ -94,11 +108,33 @@
 
   const form = document.querySelector('form[action="/invite"]');
   if (form) {
-    form.addEventListener('submit', () => {
+    let pendingSubmit = false;
+
+    form.addEventListener('submit', (e) => {
+      if (!pendingSubmit) {
+        e.preventDefault();
+        document.getElementById('confirm-name').textContent = document.getElementById('invitee_name').value.trim();
+        document.getElementById('confirm-email').textContent = document.getElementById('invitee_email').value.trim();
+        document.getElementById('confirm-org').textContent = document.getElementById('org_local_part').value.trim() + '@{{ migadu_domain }}';
+        const groups = [...document.querySelectorAll('input[name="selected_groups"]:checked')].map(cb => cb.value);
+        document.getElementById('confirm-groups').textContent = groups.join(', ') || '—';
+        document.getElementById('confirm-modal').classList.add('open');
+        return;
+      }
       const btn = document.getElementById('submit-btn');
       btn.disabled = true;
       btn.textContent = 'Sending…';
       document.getElementById('loading-msg').style.display = 'block';
+    });
+
+    document.getElementById('confirm-yes').addEventListener('click', () => {
+      document.getElementById('confirm-modal').classList.remove('open');
+      pendingSubmit = true;
+      form.requestSubmit();
+    });
+
+    document.getElementById('confirm-no').addEventListener('click', () => {
+      document.getElementById('confirm-modal').classList.remove('open');
     });
   }
 </script>
