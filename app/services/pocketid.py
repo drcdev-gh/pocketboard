@@ -60,7 +60,14 @@ async def create_signup_token(group_ids: list[str]) -> dict:
         return resp.json()
 
 
-_ACTIVITY_EVENTS = {"SIGN_IN", "CLIENT_AUTHORIZATION", "NEW_CLIENT_AUTHORIZATION"}
+_ACTIVITY_EVENTS = {
+    "SIGN_IN",
+    "TOKEN_SIGN_IN",
+    "CLIENT_AUTHORIZATION",
+    "NEW_CLIENT_AUTHORIZATION",
+    "DEVICE_CODE_AUTHORIZATION",
+    "NEW_DEVICE_CODE_AUTHORIZATION",
+}
 
 
 async def get_last_activity(limit: int = 500) -> dict[str, str]:
