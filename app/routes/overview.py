@@ -45,6 +45,12 @@ async def _fetch_groups() -> list[dict]:
             if uid:
                 user_group_membership.setdefault(uid, set()).add(gname)
 
+    # Build name → friendly name map for display in the detail popup
+    group_friendly_names = {
+        g.get("name"): g.get("friendlyName") or g.get("name", "")
+        for g in raw_groups
+    }
+
     groups = []
     for g in raw_groups:
         active_members = []
@@ -52,15 +58,15 @@ async def _fetch_groups() -> list[dict]:
             if u.get("disabled", False):
                 continue
             u["lastActivity"] = last_activity.get(u["id"])
-            if badge_map:
-                member_groups = user_group_membership.get(u.get("id", ""), set())
-                u["badges"] = [
-                    {"label": badge, "color": _badge_color_class(badge)}
-                    for group_name, badge in badge_map.items()
-                    if group_name in member_groups
-                ]
-            else:
-                u["badges"] = []
+            member_groups = user_group_membership.get(u.get("id", ""), set())
+            u["badges"] = [
+                {"label": badge, "color": _badge_color_class(badge)}
+                for group_name, badge in badge_map.items()
+                if group_name in member_groups
+            ] if badge_map else []
+            u["groupNames"] = sorted([
+                group_friendly_names.get(n, n) for n in member_groups
+            ])
             active_members.append(u)
         active_members.sort(key=lambda u: u.get("lastActivity") or "", reverse=True)
         gname = g.get("name", "")

@@ -47,7 +47,20 @@
         <tbody>
           {% for member in group.members %}
           <tr>
-            <td>{{ member.displayName }}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                {{ member.displayName }}
+                <button class="btn btn-secondary member-detail-btn"
+                        data-name="{{ member.displayName }}"
+                        data-email="{{ member.email or '' }}"
+                        data-username="{{ member.username }}"
+                        data-activity="{{ member.lastActivity or '' }}"
+                        data-badges="{{ member.badges | tojson }}"
+                        data-groups="{{ member.groupNames | tojson }}"
+                        data-disabled="{{ 'true' if member.disabled else 'false' }}"
+                        style="padding:2px 8px;font-size:0.75rem;flex-shrink:0">Details</button>
+              </div>
+            </td>
             <td>{{ member.email or '—' }}</td>
             <td class="text-muted" style="font-size:0.85rem">{{ member.username }}</td>
             {% if show_badges %}
@@ -73,4 +86,54 @@
   </div>
   {% endfor %}
 {% endif %}
+
+<div class="modal-overlay" id="member-detail-modal">
+  <div class="modal" style="max-width:480px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0" id="member-detail-title">Member details</h3>
+      <button id="member-detail-close" class="btn btn-secondary" style="padding:4px 10px;font-size:0.85rem">✕</button>
+    </div>
+    <div id="member-detail-content"></div>
+  </div>
+</div>
+
+<script>
+  function fmtActivity(ts) {
+    if (!ts) return '—';
+    return ts.slice(0, 16).replace('T', ' ') + ' UTC';
+  }
+
+  const modal = document.getElementById('member-detail-modal');
+
+  document.querySelectorAll('.member-detail-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const badges = JSON.parse(btn.dataset.badges || '[]');
+      const groups = JSON.parse(btn.dataset.groups || '[]');
+      const disabled = btn.dataset.disabled === 'true';
+
+      document.getElementById('member-detail-title').textContent = btn.dataset.name || 'Member details';
+
+      const badgeHtml = badges.length
+        ? badges.map(b => `<span class="badge ${b.color}">${b.label}</span>`).join(' ')
+        : '—';
+      const groupHtml = groups.length
+        ? groups.map(g => `<span class="badge">${g}</span>`).join(' ')
+        : '—';
+      const disabledHtml = disabled ? ' <span class="badge badge-expired">Disabled</span>' : '';
+
+      document.getElementById('member-detail-content').innerHTML = `
+        <div class="modal-field"><span class="label">Name</span>${btn.dataset.name}${disabledHtml}</div>
+        <div class="modal-field"><span class="label">Email</span>${btn.dataset.email || '—'}</div>
+        <div class="modal-field"><span class="label">Username</span><span style="font-family:monospace">${btn.dataset.username}</span></div>
+        <div class="modal-field"><span class="label">Badges</span>${badgeHtml}</div>
+        <div class="modal-field"><span class="label">Last activity</span>${fmtActivity(btn.dataset.activity)}</div>
+        <div class="modal-field"><span class="label">Groups</span>${groupHtml}</div>
+      `;
+      modal.classList.add('open');
+    });
+  });
+
+  document.getElementById('member-detail-close').addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+</script>
 {% endblock %}

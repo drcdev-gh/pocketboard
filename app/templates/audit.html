@@ -34,7 +34,7 @@
     </thead>
     <tbody>
       {% for e in entries %}
-      <tr{% if e.status == 'log_cleared' %} style="background:var(--color-warning-bg, #fffbe6)"{% endif %}>
+      <tr{% if e.status in ('log_cleared', 'template_changed') %} style="background:var(--color-warning-bg)"{% endif %}>
         <td class="nowrap" style="font-family:monospace;font-size:0.8rem;color:var(--muted)">
           {{ e.invite_id[:8] if e.invite_id else '—' }}
         </td>
@@ -103,4 +103,5 @@
   </form>
 </div>
 {% endif %}
+
 {% endblock %}
