@@ -1,7 +1,9 @@
 import sqlite3
+from datetime import datetime, timezone, timedelta
 import pytest
 from unittest.mock import patch, AsyncMock
 from tests.conftest import db_insert_audit
+from app.config import config as app_config
 
 _PID = "app.services.pocketid"
 _WEBHOOK = "app.services.webhook"
@@ -48,15 +50,58 @@ def test_audit_displays_entries(admin_client, tmp_db):
     assert "test@external.com" in response.text
 
 
-def test_audit_shows_pending_for_unseen_invite(admin_client, tmp_db):
-    db_insert_audit(tmp_db, status="sent", pocketid_token_id="unused-tok")
+def test_audit_pending_when_email_not_registered_and_token_unused(admin_client, tmp_db):
+    db_insert_audit(tmp_db, status="sent", pocketid_token_id="tok-unused")
     with (
         patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())),
-        patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"unused-tok": 0})),
+        patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"tok-unused": 0})),
     ):
         response = admin_client.get("/audit")
     assert response.status_code == 200
-    assert "pending" in response.text.lower() or "Pending" in response.text
+    assert "pending" in response.text.lower()
+
+
+def test_audit_not_pending_when_email_registered_in_pocketid(admin_client, tmp_db):
+    db_insert_audit(tmp_db, status="sent", pocketid_token_id="tok-abc",
+                    invitee_email="registered@external.com")
+    with (
+        patch(f"{_PID}.get_registered_emails", AsyncMock(return_value={"registered@external.com"})),
+        patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"tok-abc": 0})),
+    ):
+        response = admin_client.get("/audit")
+    assert response.status_code == 200
+    # Should NOT show as pending — the person has registered
+    assert "pending" not in response.text.lower()
+
+
+def test_audit_not_pending_when_token_used(admin_client, tmp_db):
+    """Token used ≥ 1 means the invite was accepted — should not show as pending."""
+    db_insert_audit(tmp_db, status="sent", pocketid_token_id="tok-used",
+                    invitee_email="notinpocketid@external.com")
+    with (
+        patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())),
+        patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"tok-used": 1})),
+    ):
+        response = admin_client.get("/audit")
+    assert response.status_code == 200
+    assert "pending" not in response.text.lower()
+
+
+def test_audit_shows_expired_when_invite_ttl_passed(admin_client, tmp_db):
+    ttl = app_config.invite_ttl_seconds
+    expired_at = datetime.now(timezone.utc) - timedelta(seconds=ttl + 3600)
+    db_insert_audit(
+        tmp_db, status="sent", pocketid_token_id="tok-old",
+        invitee_email="late@external.com",
+        created_at=expired_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+    with (
+        patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())),
+        patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"tok-old": 0})),
+    ):
+        response = admin_client.get("/audit")
+    assert response.status_code == 200
+    assert "expired" in response.text.lower()
 
 
 def test_audit_pocketid_failure_still_shows_log(admin_client, tmp_db):
@@ -66,12 +111,16 @@ def test_audit_pocketid_failure_still_shows_log(admin_client, tmp_db):
     assert response.status_code == 200
 
 
-def test_audit_pagination_second_page(admin_client, tmp_db):
-    for i in range(30):
+def test_audit_pagination_second_page_contains_correct_entries(admin_client, tmp_db):
+    # Insert 28 entries — page 1 shows 25, page 2 shows 3
+    for i in range(28):
         db_insert_audit(
             tmp_db,
+            invitee_name=f"Person {i:02d}",
             invitee_email=f"person{i}@external.com",
             invite_id=f"inv-{i}",
+            # Oldest entries have the lowest index
+            created_at=f"2024-01-{i+1:02d}T00:00:00Z",
         )
     with (
         patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())),
@@ -79,6 +128,12 @@ def test_audit_pagination_second_page(admin_client, tmp_db):
     ):
         response = admin_client.get("/audit?page=2")
     assert response.status_code == 200
+    # Page 2 should show the 3 oldest entries (persons 0, 1, 2)
+    assert "Person 00" in response.text
+    assert "Person 01" in response.text
+    assert "Person 02" in response.text
+    # Page 1's first entry should not appear on page 2
+    assert "Person 27" not in response.text
 
 
 # ---------------------------------------------------------------------------
@@ -123,8 +178,10 @@ def test_audit_clear_inserts_log_cleared_record(admin_client, tmp_db):
     assert row is not None
 
 
-def test_audit_clear_sends_webhook(admin_client):
+def test_audit_clear_sends_webhook_with_correct_event(admin_client):
     with patch(f"{_WEBHOOK}.send", AsyncMock()) as mock_wh:
         admin_client.post("/audit/clear")
     mock_wh.assert_called_once()
-    assert mock_wh.call_args.kwargs["event"] == "audit_log_cleared"
+    call = mock_wh.call_args
+    assert call.kwargs["event"] == "audit_log_cleared"
+    assert call.kwargs["data"]["cleared_by_email"] == "bob@example.com"

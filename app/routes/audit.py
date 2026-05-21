@@ -50,7 +50,8 @@ async def audit_log(request: Request, page: int = 1):
 
         async with db.execute(
             """SELECT id, created_at, created_by_name, created_by_email,
-                      invitee_name, invitee_email, org_email, groups, status, error_message, invite_id
+                      invitee_name, invitee_email, org_email, groups, status, error_message, invite_id,
+                      pocketid_token_id
                FROM audit_log
                ORDER BY created_at DESC
                LIMIT ? OFFSET ?""",

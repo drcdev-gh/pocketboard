@@ -41,75 +41,107 @@ def _insert_invite(db_path: str, *, created_at: str, status: str = "sent",
     conn.close()
 
 
-async def test_no_candidates_sends_no_webhook(db, monkeypatch):
-    # Empty DB: nothing to remind
-    with patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())):
-        with patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={})):
-            with patch(f"{_WH}.send", AsyncMock()) as mock_wh:
-                await check_expiring_invites()
+def _in_reminder_window(ttl: int) -> str:
+    """Return a created_at timestamp that falls inside the < 48h remaining window."""
+    created = datetime.now(timezone.utc) - timedelta(seconds=ttl - 3600)
+    return created.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+async def test_no_candidates_no_pocketid_call_no_webhook(db):
+    """Empty DB: returns early before calling PocketID."""
+    with patch(f"{_PID}.get_registered_emails", AsyncMock()) as mock_pid:
+        with patch(f"{_WH}.send", AsyncMock()) as mock_wh:
+            await check_expiring_invites()
+    mock_pid.assert_not_called()
     mock_wh.assert_not_called()
 
 
-async def test_already_registered_invite_not_notified(db, monkeypatch):
-    # Invite in the reminder window but invitee already registered
+async def test_already_registered_invite_not_notified_but_stamped(db):
+    """Registered invitees get reminder_sent_at stamped even though no webhook fires."""
     ttl = app_config.invite_ttl_seconds
-    # created 48h before expiry = created_at = now - (ttl - 48h)
-    created = datetime.now(timezone.utc) - timedelta(seconds=ttl - 3600)  # ~1h before reminder window
-    _insert_invite(db, created_at=created.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    _insert_invite(db, created_at=_in_reminder_window(ttl))
 
     with patch(f"{_PID}.get_registered_emails", AsyncMock(return_value={"alice@external.com"})):
         with patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={})):
             with patch(f"{_WH}.send", AsyncMock()) as mock_wh:
                 await check_expiring_invites()
+
     mock_wh.assert_not_called()
 
+    # DB must be stamped to prevent future reminder checks
+    conn = sqlite3.connect(db)
+    row = conn.execute("SELECT reminder_sent_at FROM audit_log").fetchone()
+    conn.close()
+    assert row[0] is not None
 
-async def test_token_used_invite_not_notified(db, monkeypatch):
+
+async def test_token_used_invite_not_notified_but_stamped(db):
     ttl = app_config.invite_ttl_seconds
-    created = datetime.now(timezone.utc) - timedelta(seconds=ttl - 3600)
-    _insert_invite(db, created_at=created.strftime("%Y-%m-%dT%H:%M:%SZ"), pocketid_token_id="tok-used")
+    _insert_invite(db, created_at=_in_reminder_window(ttl), pocketid_token_id="tok-used")
 
     with patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())):
         with patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"tok-used": 1})):
             with patch(f"{_WH}.send", AsyncMock()) as mock_wh:
                 await check_expiring_invites()
+
     mock_wh.assert_not_called()
 
+    conn = sqlite3.connect(db)
+    row = conn.execute("SELECT reminder_sent_at FROM audit_log").fetchone()
+    conn.close()
+    assert row[0] is not None
 
-async def test_expiring_unregistered_invite_sends_webhook(db, monkeypatch):
+
+async def test_expiring_unregistered_invite_sends_webhook(db):
     ttl = app_config.invite_ttl_seconds
-    # Place the invite inside the reminder window (< 48h remaining)
-    created = datetime.now(timezone.utc) - timedelta(seconds=ttl - 3600)
-    _insert_invite(db, created_at=created.strftime("%Y-%m-%dT%H:%M:%SZ"), pocketid_token_id="tok-pending")
+    _insert_invite(db, created_at=_in_reminder_window(ttl), pocketid_token_id="tok-pending")
 
     with patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())):
         with patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"tok-pending": 0})):
             with patch(f"{_WH}.send", AsyncMock()) as mock_wh:
                 await check_expiring_invites()
+
+    mock_wh.assert_called_once()
+    call = mock_wh.call_args
+    assert call.kwargs["event"] == "invite_expiring_soon"
+    assert call.kwargs["data"]["invitee_email"] == "alice@external.com"
+    assert call.kwargs["data"]["hours_remaining"] is not None
+
+
+async def test_email_failed_status_also_triggers_reminder(db):
+    """email_failed invites are in the candidate set — they should also get reminders."""
+    ttl = app_config.invite_ttl_seconds
+    _insert_invite(db, created_at=_in_reminder_window(ttl),
+                   status="email_failed", pocketid_token_id="tok-ef")
+
+    with patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())):
+        with patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"tok-ef": 0})):
+            with patch(f"{_WH}.send", AsyncMock()) as mock_wh:
+                await check_expiring_invites()
+
     mock_wh.assert_called_once()
     assert mock_wh.call_args.kwargs["event"] == "invite_expiring_soon"
 
 
-async def test_already_reminded_invite_not_sent_again(db, monkeypatch):
+async def test_already_reminded_invite_not_sent_again(db):
     ttl = app_config.invite_ttl_seconds
-    created = datetime.now(timezone.utc) - timedelta(seconds=ttl - 3600)
     _insert_invite(
         db,
-        created_at=created.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        reminder_sent_at="2024-01-01T00:00:00Z",  # already reminded
+        created_at=_in_reminder_window(ttl),
+        reminder_sent_at="2024-01-01T00:00:00Z",
     )
 
     with patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())):
         with patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={})):
             with patch(f"{_WH}.send", AsyncMock()) as mock_wh:
                 await check_expiring_invites()
+
     mock_wh.assert_not_called()
 
 
-async def test_reminder_marks_sent_at_in_db(db, monkeypatch):
+async def test_reminder_marks_sent_at_in_db(db):
     ttl = app_config.invite_ttl_seconds
-    created = datetime.now(timezone.utc) - timedelta(seconds=ttl - 3600)
-    _insert_invite(db, created_at=created.strftime("%Y-%m-%dT%H:%M:%SZ"), pocketid_token_id="tok-x")
+    _insert_invite(db, created_at=_in_reminder_window(ttl), pocketid_token_id="tok-x")
 
     with patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())):
         with patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"tok-x": 0})):
@@ -117,17 +149,44 @@ async def test_reminder_marks_sent_at_in_db(db, monkeypatch):
                 await check_expiring_invites()
 
     conn = sqlite3.connect(db)
-    row = conn.execute("SELECT reminder_sent_at FROM audit_log WHERE pocketid_token_id = 'tok-x'").fetchone()
+    row = conn.execute(
+        "SELECT reminder_sent_at FROM audit_log WHERE pocketid_token_id = 'tok-x'"
+    ).fetchone()
     conn.close()
     assert row[0] is not None
 
 
-async def test_pocketid_unavailable_skips_run(db, monkeypatch):
+async def test_pocketid_unavailable_skips_run_without_stamping(db):
     ttl = app_config.invite_ttl_seconds
-    created = datetime.now(timezone.utc) - timedelta(seconds=ttl - 3600)
-    _insert_invite(db, created_at=created.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    _insert_invite(db, created_at=_in_reminder_window(ttl))
 
     with patch(f"{_PID}.get_registered_emails", AsyncMock(side_effect=Exception("PID down"))):
         with patch(f"{_WH}.send", AsyncMock()) as mock_wh:
             await check_expiring_invites()
+
     mock_wh.assert_not_called()
+
+    # Must NOT stamp reminder_sent_at so the check can retry later
+    conn = sqlite3.connect(db)
+    row = conn.execute("SELECT reminder_sent_at FROM audit_log").fetchone()
+    conn.close()
+    assert row[0] is None
+
+
+async def test_multiple_candidates_each_get_own_webhook(db):
+    ttl = app_config.invite_ttl_seconds
+    created = _in_reminder_window(ttl)
+    for i in range(3):
+        _insert_invite(
+            db,
+            created_at=created,
+            invitee_email=f"person{i}@external.com",
+            pocketid_token_id=f"tok-{i}",
+        )
+
+    with patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())):
+        with patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={"tok-0": 0, "tok-1": 0, "tok-2": 0})):
+            with patch(f"{_WH}.send", AsyncMock()) as mock_wh:
+                await check_expiring_invites()
+
+    assert mock_wh.call_count == 3
