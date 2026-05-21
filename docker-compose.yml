@@ -7,41 +7,51 @@ services:
     volumes:
       - pocketboard_data:/data
     environment:
-      # Pocket ID
-      POCKETID_BASE_URL: ${POCKETID_BASE_URL:?err=ENV missing}
-      POCKETID_API_KEY: ${POCKETID_API_KEY:?err=ENV missing}
-      POCKETID_CLIENT_ID: ${POCKETID_CLIENT_ID:?err=ENV missing}
-      POCKETID_CLIENT_SECRET: ${POCKETID_CLIENT_SECRET:?err=ENV missing}
-      # Migadu
-      MIGADU_API_EMAIL: ${MIGADU_API_EMAIL:?err=ENV missing}
-      MIGADU_API_KEY: ${MIGADU_API_KEY:?err=ENV missing}
-      MIGADU_DOMAIN: ${MIGADU_DOMAIN:?err=ENV missing}
+      # Identity provider (Pocket ID)
+      IDENTITY_BASE_URL: ${IDENTITY_BASE_URL:?IDENTITY_BASE_URL is required}
+      IDENTITY_API_KEY: ${IDENTITY_API_KEY:?IDENTITY_API_KEY is required}
+      IDENTITY_CLIENT_ID: ${IDENTITY_CLIENT_ID:?IDENTITY_CLIENT_ID is required}
+      IDENTITY_CLIENT_SECRET: ${IDENTITY_CLIENT_SECRET:?IDENTITY_CLIENT_SECRET is required}
+      # Mailbox provider (Migadu)
+      MAILBOX_API_USER: ${MAILBOX_API_USER:?MAILBOX_API_USER is required}
+      MAILBOX_API_KEY: ${MAILBOX_API_KEY:?MAILBOX_API_KEY is required}
+      MAILBOX_DOMAIN: ${MAILBOX_DOMAIN:?MAILBOX_DOMAIN is required}
       # SMTP
-      SMTP_HOST: ${SMTP_HOST:?err=ENV missing}
-      SMTP_PORT: ${SMTP_PORT:?err=ENV missing}
-      SMTP_USER: ${SMTP_USER:?err=ENV missing}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:?err=ENV missing}
-      SMTP_FROM: ${SMTP_FROM:?err=ENV missing}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:?err=ENV missing}
+      SMTP_HOST: ${SMTP_HOST:-smtp.migadu.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:?SMTP_USER is required}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?SMTP_PASSWORD is required}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Organisation Onboarding}
       # Application
-      APP_SECRET_KEY: ${APP_SECRET_KEY:?err=ENV missing}
-      APP_BASE_URL: ${APP_BASE_URL:?err=ENV missing}
-      # Rate limiting
-      RATE_LIMIT_PER_USER_PER_DAY: ${RATE_LIMIT_PER_USER_PER_DAY:?err=ENV missing}
-      RATE_LIMIT_GLOBAL_PER_DAY: ${RATE_LIMIT_GLOBAL_PER_DAY:?err=ENV missing}
+      APP_SECRET_KEY: ${APP_SECRET_KEY:?APP_SECRET_KEY is required}
+      APP_BASE_URL: ${APP_BASE_URL:?APP_BASE_URL is required}
+      # Onboarding rate limiting
+      RATE_LIMIT_PER_USER_PER_DAY: ${RATE_LIMIT_PER_USER_PER_DAY:-10}
+      RATE_LIMIT_GLOBAL_PER_DAY: ${RATE_LIMIT_GLOBAL_PER_DAY:-100}
+      # Offboarding rate limiting
+      OFFBOARDING_RATE_LIMIT_PER_USER_PER_DAY: ${OFFBOARDING_RATE_LIMIT_PER_USER_PER_DAY:-5}
+      OFFBOARDING_RATE_LIMIT_GLOBAL_PER_DAY: ${OFFBOARDING_RATE_LIMIT_GLOBAL_PER_DAY:-20}
       # Invite settings
-      INVITE_TTL: ${INVITE_TTL:?err=ENV missing}
-      INVITE_USAGE_LIMIT: ${INVITE_USAGE_LIMIT:?err=ENV missing}
+      INVITE_TTL: ${INVITE_TTL:-168h}
+      INVITE_USAGE_LIMIT: ${INVITE_USAGE_LIMIT:-1}
       # Group permission mappings
-      GROUP_MAPPINGS: ${GROUP_MAPPINGS:?err=ENV missing}
-      # Audit log access (optional)
+      GROUP_MAPPINGS: ${GROUP_MAPPINGS:?GROUP_MAPPINGS is required}
+      DEFAULT_SELECTED_GROUPS: ${DEFAULT_SELECTED_GROUPS:-}
+      # Offboarding
+      OFFBOARDING_MAPPINGS: ${OFFBOARDING_MAPPINGS:-}
+      LINKED_ACCOUNTS_IT_EMAIL: ${LINKED_ACCOUNTS_IT_EMAIL:-}
+      # Mattermost linked-account discovery (optional)
+      MATTERMOST_URL: ${MATTERMOST_URL:-}
+      MATTERMOST_TOKEN: ${MATTERMOST_TOKEN:-}
+      # Access control (all default-deny)
       AUDIT_LOG_GROUPS: ${AUDIT_LOG_GROUPS:-}
       AUDIT_LOG_CLEAR_GROUPS: ${AUDIT_LOG_CLEAR_GROUPS:-}
       EMAIL_TEMPLATE_GROUPS: ${EMAIL_TEMPLATE_GROUPS:-}
       ORG_OVERVIEW_GROUPS: ${ORG_OVERVIEW_GROUPS:-}
-      # Default pre-selected groups in the invite form (optional)
-      DEFAULT_SELECTED_GROUPS: ${DEFAULT_SELECTED_GROUPS:-}
+      # Badge mappings for organisation overview
       BADGE_MAPPINGS: ${BADGE_MAPPINGS:-}
+      # Webhook notifications (optional)
       WEBHOOK_URL: ${WEBHOOK_URL:-}
 
 volumes:
