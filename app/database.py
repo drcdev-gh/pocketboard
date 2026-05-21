@@ -60,3 +60,7 @@ async def init_db():
         if "reminder_sent_at" not in columns:
             await db.execute("ALTER TABLE audit_log ADD COLUMN reminder_sent_at TEXT")
             await db.commit()
+
+        if "anonymised_at" not in columns:
+            await db.execute("ALTER TABLE audit_log ADD COLUMN anonymised_at TEXT")
+            await db.commit()

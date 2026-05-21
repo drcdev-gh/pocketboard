@@ -35,6 +35,7 @@ os.environ.setdefault("LINKED_ACCOUNTS_IT_EMAIL", "it@example.com")
 import app.database as database_module
 import app.routes.overview as overview_module
 import app.services.reminders as reminders_module
+import app.services.anonymise as anonymise_module
 from app.main import app as fastapi_app
 
 STAFF_USER = {
@@ -77,6 +78,7 @@ def client(tmp_db, monkeypatch):
     with (
         patch.object(overview_module, "background_refresh_loop", _noop),
         patch.object(reminders_module, "background_reminder_loop", _noop),
+        patch.object(anonymise_module, "background_anonymise_loop", _noop),
     ):
         with TestClient(fastapi_app, raise_server_exceptions=True) as c:
             yield c

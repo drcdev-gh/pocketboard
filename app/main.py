@@ -8,6 +8,7 @@ from app.config import config
 from app.database import init_db
 from app.routes import auth, onboard, audit, overview, template, offboarding
 from app.services import reminders
+from app.services import anonymise as anonymise_svc
 
 
 @asynccontextmanager
@@ -15,8 +16,9 @@ async def lifespan(app: FastAPI):
     await init_db()
     overview_task = asyncio.create_task(overview.background_refresh_loop())
     reminder_task = asyncio.create_task(reminders.background_reminder_loop())
+    anonymise_task = asyncio.create_task(anonymise_svc.background_anonymise_loop())
     yield
-    for task in (overview_task, reminder_task):
+    for task in (overview_task, reminder_task, anonymise_task):
         task.cancel()
         try:
             await task

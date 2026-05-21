@@ -34,7 +34,7 @@
     </thead>
     <tbody>
       {% for e in entries %}
-      <tr{% if e.status in ('log_cleared', 'template_changed') %} style="background:var(--color-warning-bg)"{% endif %}>
+      <tr{% if e.status in ('log_cleared', 'template_changed', 'users_anonymised') %} style="background:var(--color-warning-bg)"{% endif %}>
         <td class="nowrap" style="font-family:monospace;font-size:0.8rem;color:var(--muted)">
           {{ e.invite_id[:8] if e.invite_id else '—' }}
         </td>
@@ -43,9 +43,12 @@
           <div>{{ e.created_by_name }}</div>
           <div class="text-muted small">{{ e.created_by_email }}</div>
         </td>
-        {% if e.status in ('log_cleared', 'template_changed') %}
+        {% if e.status in ('log_cleared', 'template_changed', 'users_anonymised') %}
         <td colspan="3" class="text-muted">
-          {% if e.status == 'log_cleared' %}— audit log cleared —{% else %}— invitation email template updated —{% endif %}
+          {% if e.status == 'log_cleared' %}— audit log cleared —
+          {% elif e.status == 'template_changed' %}— invitation email template updated —
+          {% elif e.status == 'users_anonymised' %}— offboarded users anonymised{% if e.error_message %}: {{ e.error_message }}{% endif %} —
+          {% endif %}
         </td>
         {% else %}
         <td>
@@ -60,7 +63,7 @@
         </td>
         {% endif %}
         <td>
-          {% set status_labels = {"sent": "Sent", "email_failed": "Email failed", "log_cleared": "Log cleared", "template_changed": "Template changed"} %}
+          {% set status_labels = {"sent": "Sent", "email_failed": "Email failed", "offboarding_requested": "Offboarding requested", "log_cleared": "Log cleared", "template_changed": "Template changed", "users_anonymised": "Users anonymised"} %}
           <span class="status status-{{ e.status }}">{{ status_labels.get(e.status, e.status) }}</span>
           {% if e.invite_expired %}
           <div style="margin-top:4px"><span class="badge badge-expired">Expired</span></div>
@@ -96,7 +99,11 @@
 {% endif %}
 
 {% if can_clear %}
-<div style="margin-top:2rem">
+<div style="margin-top:2rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start">
+  <form method="post" action="/audit/anonymise"
+        onsubmit="return confirm('This will immediately anonymise personal data for all offboarded users in the audit log. The action is recorded. Continue?')">
+    <button type="submit" class="btn btn-warning">Anonymise offboarded users</button>
+  </form>
   <form method="post" action="/audit/clear"
         onsubmit="return confirm('This will permanently delete all invite records (log cleared entries will be kept). Are you sure?')">
     <button type="submit" class="btn btn-danger">Clear audit log</button>

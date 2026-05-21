@@ -185,3 +185,99 @@ def test_audit_clear_sends_webhook_with_correct_event(admin_client):
     call = mock_wh.call_args
     assert call.kwargs["event"] == "audit_log_cleared"
     assert call.kwargs["data"]["cleared_by_email"] == "bob@example.com"
+
+
+# ---------------------------------------------------------------------------
+# POST /audit/anonymise
+# ---------------------------------------------------------------------------
+
+def test_audit_anonymise_redirects_unauthenticated(client):
+    response = client.post("/audit/anonymise", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["location"] == "/login"
+
+
+def test_audit_anonymise_denied_for_non_admin(staff_client):
+    response = staff_client.post("/audit/anonymise", follow_redirects=False)
+    assert response.status_code == 303
+    assert "/audit" in response.headers["location"]
+
+
+def test_audit_anonymise_replaces_pii_for_offboarded_users(admin_client, tmp_db):
+    db_insert_audit(tmp_db, invitee_name="Alice Member", invitee_email="alice@external.com",
+                    org_email="alice@example.org", status="sent", invite_id="inv-alice")
+    db_insert_audit(tmp_db, invitee_name="Alice Member", invitee_email="alice@external.com",
+                    org_email="", status="offboarding_requested", invite_id="ob-alice")
+
+    response = admin_client.post("/audit/anonymise", follow_redirects=False)
+    assert response.status_code == 303
+
+    conn = sqlite3.connect(tmp_db)
+    rows = conn.execute(
+        "SELECT invitee_name, invitee_email FROM audit_log "
+        "WHERE invite_id IN ('inv-alice','ob-alice')"
+    ).fetchall()
+    conn.close()
+    for name, email in rows:
+        assert name == "[anonymised]"
+        assert email == "[anonymised]"
+
+
+def test_audit_anonymise_inserts_audit_trail_entry(admin_client, tmp_db):
+    db_insert_audit(tmp_db, invitee_email="bob@external.com",
+                    status="offboarding_requested", invite_id="ob-bob")
+
+    admin_client.post("/audit/anonymise")
+
+    conn = sqlite3.connect(tmp_db)
+    row = conn.execute(
+        "SELECT status, created_by_email FROM audit_log WHERE status = 'users_anonymised'"
+    ).fetchone()
+    conn.close()
+    assert row is not None
+    assert row[1] == "bob@example.com"  # ADMIN_USER email
+
+
+def test_audit_anonymise_no_trail_entry_when_nothing_to_anonymise(admin_client, tmp_db):
+    # No offboarding entries — nothing to anonymise, no trail entry expected
+    admin_client.post("/audit/anonymise")
+
+    conn = sqlite3.connect(tmp_db)
+    count = conn.execute(
+        "SELECT COUNT(*) FROM audit_log WHERE status = 'users_anonymised'"
+    ).fetchone()[0]
+    conn.close()
+    assert count == 0
+
+
+def test_audit_anonymise_does_not_touch_non_offboarded_users(admin_client, tmp_db):
+    # Carol has an invite but no offboarding entry — her data must stay intact
+    db_insert_audit(tmp_db, invitee_name="Carol", invitee_email="carol@external.com",
+                    status="sent", invite_id="inv-carol")
+    # Dave is offboarded — only Dave's rows should be anonymised
+    db_insert_audit(tmp_db, invitee_name="Dave", invitee_email="dave@external.com",
+                    status="offboarding_requested", invite_id="ob-dave")
+
+    admin_client.post("/audit/anonymise")
+
+    conn = sqlite3.connect(tmp_db)
+    carol = conn.execute(
+        "SELECT invitee_email FROM audit_log WHERE invite_id = 'inv-carol'"
+    ).fetchone()
+    conn.close()
+    assert carol[0] == "carol@external.com"
+
+
+def test_audit_anonymise_users_anonymised_excluded_from_total_count(admin_client, tmp_db):
+    db_insert_audit(tmp_db, invitee_email="eve@external.com",
+                    status="offboarding_requested", invite_id="ob-eve")
+    admin_client.post("/audit/anonymise")
+
+    with (
+        patch(f"{_PID}.get_registered_emails", AsyncMock(return_value=set())),
+        patch(f"{_PID}.get_signup_token_usage", AsyncMock(return_value={})),
+    ):
+        response = admin_client.get("/audit")
+    assert response.status_code == 200
+    # The users_anonymised audit trail entry must not inflate the invite count
+    assert "2 invites" not in response.text  # only 1 real invite (the offboarding row)

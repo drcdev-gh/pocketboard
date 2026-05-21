@@ -12,6 +12,7 @@ from app.database import get_db
 from app.templating import templates, user_can_audit, user_can_clear_audit
 from app.services import pocketid as pid_svc
 from app.services import webhook as webhook_svc
+from app.services import anonymise as anonymise_svc
 
 router = APIRouter()
 
@@ -45,7 +46,7 @@ async def audit_log(request: Request, page: int = 1):
     offset = (page - 1) * page_size
 
     async with get_db() as db:
-        async with db.execute("SELECT COUNT(*) FROM audit_log WHERE status NOT IN ('log_cleared', 'template_changed')") as cur:
+        async with db.execute("SELECT COUNT(*) FROM audit_log WHERE status NOT IN ('log_cleared', 'template_changed', 'users_anonymised')") as cur:
             total = (await cur.fetchone())[0]
 
         async with db.execute(
@@ -125,5 +126,27 @@ async def clear_audit_log(request: Request):
         text=f"🗑️ **Audit log cleared** by {user['name']} ({user['email']})",
         data={"cleared_by_name": user["name"], "cleared_by_email": user["email"]},
     )
+
+    return RedirectResponse(url="/audit", status_code=303)
+
+
+@router.post("/audit/anonymise", response_class=HTMLResponse)
+async def anonymise_offboarded_users(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    if not user_can_clear_audit(user):
+        return RedirectResponse(url="/audit", status_code=303)
+
+    users_count, rows_count = await anonymise_svc.anonymise_offboarded()
+    if users_count > 0:
+        await anonymise_svc.record_anonymisation(
+            actor_sub=user["sub"],
+            actor_email=user["email"],
+            actor_name=user["name"],
+            users_count=users_count,
+            rows_count=rows_count,
+        )
 
     return RedirectResponse(url="/audit", status_code=303)
