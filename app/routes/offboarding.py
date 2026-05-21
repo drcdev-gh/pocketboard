@@ -7,6 +7,7 @@ from starlette.responses import RedirectResponse
 from app.auth import get_current_user
 from app.config import config
 from app.database import get_db
+from app.rate_limit import check_and_record_offboarding, get_offboarding_usage
 from app.templating import templates, user_can_offboard
 from app.services import linked_accounts
 from app.services import email as email_svc
@@ -122,6 +123,7 @@ async def offboarding_page(request: Request):
         members = []
 
     requester_local = await _requester_mailbox_local(user)
+    rate_used, _ = await get_offboarding_usage(user["sub"])
 
     return templates.TemplateResponse("offboarding.html", {
         "request": request,
@@ -131,6 +133,8 @@ async def offboarding_page(request: Request):
         "mailbox_domain": config.mailbox_domain,
         "requester_mailbox_local": requester_local,
         "it_email_configured": bool(config.linked_accounts_it_email),
+        "rate_used": rate_used,
+        "rate_max": config.offboarding_rate_limit_per_user_per_day,
     })
 
 
@@ -182,6 +186,10 @@ async def send_offboarding_email(
         if not _validate_cc_local(local):
             return JSONResponse({"error": "Invalid CC email local part"}, status_code=400)
         cc_email = f"{local}@{config.mailbox_domain}"
+
+    allowed, reason = await check_and_record_offboarding(user["sub"])
+    if not allowed:
+        return JSONResponse({"error": reason}, status_code=429)
 
     allowed_targets = _allowed_targets(user)
     if not await _member_is_allowed(member_id, allowed_targets):

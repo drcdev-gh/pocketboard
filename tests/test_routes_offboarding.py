@@ -11,7 +11,7 @@ import app.routes.overview as overview_module
 import app.routes.offboarding as offboarding_module
 import app.services.linked_accounts as la_registry
 from app.services.linked_accounts.base import LinkedAccount
-from tests.conftest import STAFF_USER, ADMIN_USER
+from tests.conftest import STAFF_USER, ADMIN_USER, db_insert_offboarding_rate_limit
 
 _PID = "app.services.pocketid"
 _EMAIL = "app.services.email"
@@ -180,6 +180,47 @@ def test_offboarding_page_cc_null_when_no_migadu(admin_client):
         resp = admin_client.get("/offboarding")
     assert resp.status_code == 200
     assert "null" in resp.text  # REQUESTER_MAILBOX_LOCAL = null in JS
+
+
+def test_offboarding_page_shows_rate_counter(admin_client, tmp_db):
+    from tests.conftest import ADMIN_USER as _AU
+    db_insert_offboarding_rate_limit(tmp_db, _AU["sub"], count=2)
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    assert "2/" in resp.text  # e.g. "2/5 offboarding requests used today"
+    assert "offboarding requests used today" in resp.text
+
+
+def test_offboarding_page_disables_buttons_when_limit_reached(admin_client, tmp_db):
+    from app.config import config as app_config
+    from tests.conftest import ADMIN_USER as _AU
+    db_insert_offboarding_rate_limit(tmp_db, _AU["sub"], count=app_config.offboarding_rate_limit_per_user_per_day)
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    assert 'disabled' in resp.text
+    assert "daily limit" in resp.text.lower()
+
+
+def test_offboarding_page_buttons_enabled_when_limit_not_reached(admin_client, tmp_db):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    # The limit-specific disabled marker must not appear when quota is available
+    assert 'Daily limit reached' not in resp.text
 
 
 # ---------------------------------------------------------------------------
@@ -451,3 +492,151 @@ def test_send_does_not_write_audit_log_on_smtp_failure(admin_client, tmp_db):
     ).fetchone()
     conn.close()
     assert row[0] == 0
+
+
+# ---------------------------------------------------------------------------
+# CC local-part validation edge cases
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("bad_local", [
+    "trailing-",        # trailing dash
+    "trailing.",        # trailing dot
+    "-leading",         # leading dash (dot already covered above)
+    "bob_name",         # underscore not allowed
+    "böb",              # non-ASCII
+    "a b",              # embedded space
+    "",                 # empty string is not reached here (route strips first),
+                        # but _validate_cc_local itself must reject it
+])
+def test_validate_cc_local_rejects_invalid(bad_local):
+    from app.routes.offboarding import _validate_cc_local
+    assert _validate_cc_local(bad_local) is False
+
+
+@pytest.mark.parametrize("good_local", [
+    "alice",
+    "alice.smith",
+    "alice-smith",
+    "a1b2",
+    "it",
+])
+def test_validate_cc_local_accepts_valid(good_local):
+    from app.routes.offboarding import _validate_cc_local
+    assert _validate_cc_local(good_local) is True
+
+
+def test_send_rejects_cc_with_trailing_dash(admin_client):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    resp = admin_client.post(
+        "/offboarding/send",
+        data={"member_id": _OFFBOARDABLE_MEMBER["id"], "cc_local_part": "trailing-"},
+    )
+    assert resp.status_code == 400
+    assert "Invalid CC" in resp.json()["error"]
+
+
+def test_send_rejects_cc_with_underscore(admin_client):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    resp = admin_client.post(
+        "/offboarding/send",
+        data={"member_id": _OFFBOARDABLE_MEMBER["id"], "cc_local_part": "bob_name"},
+    )
+    assert resp.status_code == 400
+    assert "Invalid CC" in resp.json()["error"]
+
+
+def test_send_rejects_cc_with_non_ascii(admin_client):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    resp = admin_client.post(
+        "/offboarding/send",
+        data={"member_id": _OFFBOARDABLE_MEMBER["id"], "cc_local_part": "böb"},
+    )
+    assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting
+# ---------------------------------------------------------------------------
+
+_RATE_LIMIT = "app.routes.offboarding.check_and_record_offboarding"
+
+
+def test_send_blocked_when_rate_limit_exceeded(admin_client):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    with patch(_RATE_LIMIT, AsyncMock(return_value=(False, "daily limit reached"))):
+        resp = admin_client.post("/offboarding/send", data={"member_id": _OFFBOARDABLE_MEMBER["id"]})
+    assert resp.status_code == 429
+    assert "daily limit" in resp.json()["error"]
+
+
+def test_send_allowed_when_rate_limit_not_exceeded(admin_client, tmp_db):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    with (
+        patch(_RATE_LIMIT, AsyncMock(return_value=(True, ""))),
+        patch(f"{_LA}.for_member", AsyncMock(return_value=[])),
+        patch(f"{_EMAIL}.send_offboarding_email", AsyncMock()),
+    ):
+        resp = admin_client.post("/offboarding/send", data={"member_id": _OFFBOARDABLE_MEMBER["id"]})
+    assert resp.status_code == 200
+
+
+def test_send_rate_limit_not_consumed_for_invalid_cc(admin_client):
+    """A bad CC local part is rejected before the rate limit is checked."""
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    rate_check = AsyncMock(return_value=(True, ""))
+    with patch(_RATE_LIMIT, rate_check):
+        resp = admin_client.post(
+            "/offboarding/send",
+            data={"member_id": _OFFBOARDABLE_MEMBER["id"], "cc_local_part": "bad!"},
+        )
+    assert resp.status_code == 400
+    rate_check.assert_not_called()
+
+
+def test_send_rate_limit_enforced_independently_per_user(admin_client, tmp_db):
+    """Each offboarding request by the same user is counted against their quota."""
+    from app.config import config
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    call_count = 0
+
+    async def _real_check_and_record(user_sub):
+        from app.rate_limit import check_and_record_offboarding as _real
+        return await _real(user_sub)
+
+    # Send up to the per-user limit using the real rate limiter
+    import app.database as db_module
+    monkeypatch_db = tmp_db  # tmp_db fixture wires DB_PATH
+
+    with (
+        patch(f"{_LA}.for_member", AsyncMock(return_value=[])),
+        patch(f"{_EMAIL}.send_offboarding_email", AsyncMock()),
+    ):
+        for _ in range(config.offboarding_rate_limit_per_user_per_day):
+            resp = admin_client.post("/offboarding/send", data={"member_id": _OFFBOARDABLE_MEMBER["id"]})
+            assert resp.status_code == 200
+
+        # Next request should be blocked
+        resp = admin_client.post("/offboarding/send", data={"member_id": _OFFBOARDABLE_MEMBER["id"]})
+    assert resp.status_code == 429
+    assert "offboarding requests" in resp.json()["error"]

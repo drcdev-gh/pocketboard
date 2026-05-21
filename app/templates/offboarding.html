@@ -18,7 +18,20 @@
 </div>
 
 {% else %}
+{% set rate_remaining = rate_max - rate_used %}
+{% if rate_remaining <= 0 %}
+<div class="alert alert-error">
+  You have reached your daily limit of {{ rate_max }} offboarding request{{ 's' if rate_max != 1 else '' }}. Try again tomorrow.
+</div>
+{% endif %}
+
 <div class="card table-card">
+  <div style="display:flex;justify-content:flex-end;padding:8px 16px 0">
+    <span style="font-size:0.85rem;color:{% if rate_remaining <= 0 %}var(--red){% elif rate_remaining <= 2 %}var(--red){% elif rate_remaining <= 4 %}var(--yellow){% else %}var(--muted){% endif %}">
+      {{ rate_used }}/{{ rate_max }} offboarding requests used today
+      ({{ [rate_remaining, 0] | max }} remaining)
+    </span>
+  </div>
   <table class="table">
     <thead>
       <tr>
@@ -35,7 +48,8 @@
         <td style="text-align:right;white-space:nowrap">
           <button class="btn btn-secondary offboard-btn"
                   data-member-id="{{ m.id }}"
-                  data-member-name="{{ m.displayName | e }}">
+                  data-member-name="{{ m.displayName | e }}"
+                  {% if rate_remaining <= 0 %}disabled title="Daily limit reached"{% endif %}>
             Offboard
           </button>
         </td>

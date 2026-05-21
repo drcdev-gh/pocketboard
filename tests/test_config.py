@@ -115,3 +115,104 @@ def test_audit_log_groups_empty(monkeypatch):
 def test_default_selected_groups(monkeypatch):
     monkeypatch.setenv("DEFAULT_SELECTED_GROUPS", "Volunteers,Members")
     assert Config().default_selected_groups == ["Volunteers", "Members"]
+
+
+# ---------------------------------------------------------------------------
+# identity_provider / mailbox_provider defaults
+# ---------------------------------------------------------------------------
+
+def test_identity_provider_defaults_to_pocketid(monkeypatch):
+    monkeypatch.delenv("IDENTITY_PROVIDER", raising=False)
+    assert Config().identity_provider == "pocketid"
+
+
+def test_identity_provider_reads_from_env(monkeypatch):
+    monkeypatch.setenv("IDENTITY_PROVIDER", "keycloak")
+    assert Config().identity_provider == "keycloak"
+
+
+def test_mailbox_provider_defaults_to_migadu(monkeypatch):
+    monkeypatch.delenv("MAILBOX_PROVIDER", raising=False)
+    assert Config().mailbox_provider == "migadu"
+
+
+def test_mailbox_provider_reads_from_env(monkeypatch):
+    monkeypatch.setenv("MAILBOX_PROVIDER", "postfix")
+    assert Config().mailbox_provider == "postfix"
+
+
+# ---------------------------------------------------------------------------
+# offboarding_mappings + allowed_offboarding_targets
+# ---------------------------------------------------------------------------
+
+def test_offboarding_mappings_parsed(monkeypatch):
+    monkeypatch.setenv("OFFBOARDING_MAPPINGS", "Admin=Volunteers,Members;HR=Volunteers")
+    c = Config()
+    assert c.offboarding_mappings == {
+        "Admin": ["Volunteers", "Members"],
+        "HR": ["Volunteers"],
+    }
+
+
+def test_offboarding_mappings_empty(monkeypatch):
+    monkeypatch.setenv("OFFBOARDING_MAPPINGS", "")
+    assert Config().offboarding_mappings == {}
+
+
+def test_allowed_offboarding_targets_returns_correct_groups(monkeypatch):
+    monkeypatch.setenv("OFFBOARDING_MAPPINGS", "Admin=Volunteers,Members")
+    assert Config().allowed_offboarding_targets(["Admin"]) == ["Volunteers", "Members"]
+
+
+def test_allowed_offboarding_targets_no_match(monkeypatch):
+    monkeypatch.setenv("OFFBOARDING_MAPPINGS", "Admin=Volunteers")
+    assert Config().allowed_offboarding_targets(["Staff"]) == []
+
+
+def test_allowed_offboarding_targets_empty_mappings(monkeypatch):
+    monkeypatch.setenv("OFFBOARDING_MAPPINGS", "")
+    assert Config().allowed_offboarding_targets(["Admin"]) == []
+
+
+def test_allowed_offboarding_targets_deduplicates_across_caller_groups(monkeypatch):
+    monkeypatch.setenv("OFFBOARDING_MAPPINGS", "Admin=Volunteers,Members;HR=Volunteers,Extra")
+    c = Config()
+    result = c.allowed_offboarding_targets(["Admin", "HR"])
+    assert result == ["Volunteers", "Members", "Extra"]
+
+
+# ---------------------------------------------------------------------------
+# _parse_mappings edge cases (shared by group_mappings + offboarding_mappings)
+# ---------------------------------------------------------------------------
+
+def test_parse_mappings_empty_targets_value(monkeypatch):
+    """'Admin=' should parse to {'Admin': []} without error."""
+    monkeypatch.setenv("GROUP_MAPPINGS", "Admin=")
+    assert Config().group_mappings == {"Admin": []}
+
+
+def test_parse_mappings_whitespace_only_targets(monkeypatch):
+    """Targets that are only whitespace should collapse to empty list."""
+    monkeypatch.setenv("GROUP_MAPPINGS", "Admin=  ,  ")
+    assert Config().group_mappings == {"Admin": []}
+
+
+def test_parse_mappings_leading_and_trailing_semicolons(monkeypatch):
+    """;Admin=Target; should parse cleanly, ignoring the empty entries."""
+    monkeypatch.setenv("GROUP_MAPPINGS", ";Admin=Volunteers;")
+    assert Config().group_mappings == {"Admin": ["Volunteers"]}
+
+
+def test_parse_mappings_whitespace_around_keys_and_values(monkeypatch):
+    monkeypatch.setenv("GROUP_MAPPINGS", " Admin = Volunteers , Members ")
+    c = Config()
+    assert c.group_mappings == {"Admin": ["Volunteers", "Members"]}
+
+
+def test_parse_mappings_same_logic_for_offboarding_and_group_mappings(monkeypatch):
+    """Both mappings use _parse_mappings — verify they produce identical structure."""
+    raw = "Admin=Volunteers,Members"
+    monkeypatch.setenv("GROUP_MAPPINGS", raw)
+    monkeypatch.setenv("OFFBOARDING_MAPPINGS", raw)
+    c = Config()
+    assert c.group_mappings == c.offboarding_mappings

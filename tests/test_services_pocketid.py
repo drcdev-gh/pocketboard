@@ -316,3 +316,38 @@ async def test_get_last_activity_exits_early_when_all_users_found():
     assert "u1" in result
     assert "u2" in result
     assert call_count == 1  # stopped after finding all expected users
+
+
+# ---------------------------------------------------------------------------
+# get_user_by_id
+# ---------------------------------------------------------------------------
+
+@respx.mock
+async def test_get_user_by_id_returns_user_dict():
+    user_data = {"id": "u-abc", "email": "alice@example.com", "displayName": "Alice"}
+    respx.get(f"{_BASE}/users/u-abc").mock(return_value=Response(200, json=user_data))
+    result = await pid.get_user_by_id("u-abc")
+    assert result["id"] == "u-abc"
+    assert result["email"] == "alice@example.com"
+
+
+@respx.mock
+async def test_get_user_by_id_returns_none_on_404():
+    respx.get(f"{_BASE}/users/no-such-user").mock(return_value=Response(404, json={}))
+    result = await pid.get_user_by_id("no-such-user")
+    assert result is None
+
+
+@respx.mock
+async def test_get_user_by_id_raises_on_non_404_error():
+    respx.get(f"{_BASE}/users/u-server-err").mock(return_value=Response(500, json={}))
+    with pytest.raises(Exception):
+        await pid.get_user_by_id("u-server-err")
+
+
+@respx.mock
+async def test_get_user_by_id_builds_correct_url():
+    respx.get(f"{_BASE}/users/uid-42").mock(return_value=Response(200, json={"id": "uid-42"}))
+    await pid.get_user_by_id("uid-42")
+    assert respx.calls.call_count == 1
+    assert "/users/uid-42" in str(respx.calls.last.request.url)

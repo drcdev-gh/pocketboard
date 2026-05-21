@@ -29,6 +29,9 @@ class Config:
         self.rate_limit_per_user_per_day = int(os.environ.get("RATE_LIMIT_PER_USER_PER_DAY", "10"))
         self.rate_limit_global_per_day = int(os.environ.get("RATE_LIMIT_GLOBAL_PER_DAY", "100"))
 
+        self.offboarding_rate_limit_per_user_per_day = int(os.environ.get("OFFBOARDING_RATE_LIMIT_PER_USER_PER_DAY", "5"))
+        self.offboarding_rate_limit_global_per_day = int(os.environ.get("OFFBOARDING_RATE_LIMIT_GLOBAL_PER_DAY", "20"))
+
         # e.g. "168h" (7 days); PocketID accepts Go duration strings
         self.invite_ttl = os.environ.get("INVITE_TTL", "168h")
         self.invite_usage_limit = int(os.environ.get("INVITE_USAGE_LIMIT", "1"))

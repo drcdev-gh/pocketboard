@@ -132,3 +132,11 @@ def db_insert_rate_limit(db_path: str, user_sub: str, count: int = 1) -> None:
         conn.execute("INSERT INTO rate_limit_log (user_sub) VALUES (?)", (user_sub,))
     conn.commit()
     conn.close()
+
+
+def db_insert_offboarding_rate_limit(db_path: str, user_sub: str, count: int = 1) -> None:
+    conn = sqlite3.connect(db_path)
+    for _ in range(count):
+        conn.execute("INSERT INTO offboarding_rate_limit_log (user_sub) VALUES (?)", (user_sub,))
+    conn.commit()
+    conn.close()

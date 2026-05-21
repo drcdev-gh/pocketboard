@@ -37,6 +37,12 @@ async def init_db():
                 created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
             );
 
+            CREATE TABLE IF NOT EXISTS offboarding_rate_limit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_sub TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+
             CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
