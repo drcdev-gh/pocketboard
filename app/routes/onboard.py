@@ -100,7 +100,14 @@ async def create_invite(
     if not selected_groups:
         return render(error="Please select at least one group.")
 
-    if not org_local_part or not org_local_part.isascii() or not org_local_part.replace("-", "").replace(".", "").isalnum():
+    if (
+        not org_local_part
+        or not org_local_part.isascii()
+        or not org_local_part.replace("-", "").replace(".", "").isalnum()
+        or org_local_part[0] in "-."
+        or org_local_part[-1] in "-."
+        or ".." in org_local_part
+    ):
         return render(error="Organisation email local part contains invalid characters.")
 
     # Pre-check: already invited via this system?

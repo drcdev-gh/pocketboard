@@ -1,7 +1,25 @@
+import string
 import aiosmtplib
 from email.mime.text import MIMEText
 from app.config import config
 from app.database import get_db
+
+
+class _RestrictedFormatter(string.Formatter):
+    """str.format() wrapper that blocks attribute/subscript access in field names.
+
+    Prevents template strings like {to_name.__class__.__globals__} from
+    traversing Python object attributes. Only simple named keys are allowed.
+    """
+    def get_field(self, field_name: str, args, kwargs):
+        if "." in field_name or "[" in field_name:
+            raise ValueError(
+                f"Attribute or subscript access is not permitted in email templates: {field_name!r}"
+            )
+        return super().get_field(field_name, args, kwargs)
+
+
+_formatter = _RestrictedFormatter()
 
 DEFAULT_TEMPLATE = """Hello {to_name},
 
@@ -46,7 +64,8 @@ async def send_invite_email(
     group_list = ", ".join(groups) if groups else "—"
     template = await _get_setting("email_template") or DEFAULT_TEMPLATE
     subject = await _get_setting("email_subject") or DEFAULT_SUBJECT
-    body = template.format(
+    body = _formatter.format(
+        template,
         to_name=to_name,
         org_email=org_email,
         invite_url=invite_url,
