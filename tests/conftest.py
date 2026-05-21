@@ -26,6 +26,9 @@ os.environ.setdefault("EMAIL_TEMPLATE_GROUPS", "Admin")
 os.environ.setdefault("DEFAULT_SELECTED_GROUPS", "Volunteers")
 os.environ.setdefault("RATE_LIMIT_PER_USER_PER_DAY", "5")
 os.environ.setdefault("RATE_LIMIT_GLOBAL_PER_DAY", "20")
+os.environ.setdefault("OFFBOARDING_MAPPINGS", "Admin=Volunteers,Members")
+os.environ.setdefault("LINKED_ACCOUNTS_IT_EMAIL", "it@example.com")
+# MATTERMOST_URL / MATTERMOST_TOKEN intentionally not set — Mattermost is optional
 
 import app.database as database_module
 import app.routes.overview as overview_module
@@ -53,6 +56,7 @@ _AUTH_TARGETS = [
     "app.routes.template.get_current_user",
     "app.routes.overview.get_current_user",
     "app.routes.auth.get_current_user",
+    "app.routes.offboarding.get_current_user",
 ]
 
 

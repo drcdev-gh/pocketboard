@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}Offboarding – Pocketboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Offboarding</h1>
+  <p class="text-muted">Members eligible for offboarding based on your group permissions.</p>
+</div>
+
+{% if access_denied %}
+<div class="alert alert-error">You do not have permission to access the offboarding page. Contact your IT administrator.</div>
+
+{% elif not it_email_configured %}
+<div class="alert alert-warning"><strong>Offboarding email not configured.</strong> Set <code>LINKED_ACCOUNTS_IT_EMAIL</code> to enable sending offboarding requests.</div>
+
+{% elif not members %}
+<div class="card empty-state">
+  <p>No members found for your permitted groups.</p>
+</div>
+
+{% else %}
+<div class="card table-card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th style="width:1%"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in members %}
+      <tr>
+        <td>{{ m.displayName }}</td>
+        <td class="text-muted" style="font-size:0.9rem">{{ m.email or '—' }}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn btn-secondary offboard-btn"
+                  data-member-id="{{ m.id }}"
+                  data-member-name="{{ m.displayName | e }}">
+            Offboard
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Offboarding modal -->
+<div class="modal-overlay" id="offboard-modal">
+  <div class="modal" style="max-width:560px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0" id="offboard-modal-title">Offboard member</h3>
+      <button id="offboard-modal-close" class="btn btn-secondary" style="padding:4px 10px;font-size:0.85rem">✕</button>
+    </div>
+    <div id="offboard-loading" style="text-align:center;padding:32px;color:var(--muted)">Loading…</div>
+    <div id="offboard-fetch-error" class="alert alert-error" style="display:none"></div>
+    <div id="offboard-body" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+  const MIGADU_DOMAIN = {{ migadu_domain | tojson }};
+  const REQUESTER_MIGADU_LOCAL = {{ requester_migadu_local | tojson }};
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s || '');
+    return d.innerHTML;
+  }
+
+  function confidenceColor(c) {
+    return c === 'confirmed' ? 'var(--green,#22c55e)' : c === 'likely' ? 'var(--yellow,#eab308)' : 'var(--muted)';
+  }
+
+  const modal = document.getElementById('offboard-modal');
+  document.getElementById('offboard-modal-close').addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+  document.querySelectorAll('.offboard-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const memberId = btn.dataset.memberId;
+      const memberName = btn.dataset.memberName;
+
+      document.getElementById('offboard-modal-title').textContent = `Offboard: ${memberName}`;
+      document.getElementById('offboard-loading').style.display = 'block';
+      document.getElementById('offboard-fetch-error').style.display = 'none';
+      document.getElementById('offboard-body').style.display = 'none';
+      modal.classList.add('open');
+
+      try {
+        const resp = await fetch(`/offboarding/accounts/${encodeURIComponent(memberId)}`);
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+        renderOffboardBody(memberId, data);
+      } catch (err) {
+        document.getElementById('offboard-loading').style.display = 'none';
+        const errEl = document.getElementById('offboard-fetch-error');
+        errEl.textContent = `Could not load member data: ${err.message}`;
+        errEl.style.display = 'block';
+      }
+    });
+  });
+
+  function buildPreview(member, accounts) {
+    const acctLines = accounts.length
+      ? accounts.map(a =>
+          `  ${a.system.padEnd(12)} ${a.identifier.padEnd(35)} ${a.confidence.toUpperCase().padEnd(12)} (${a.match_reason})`
+        ).join('\n')
+      : '  None found.';
+    return (
+      `Offboarding request: ${member.displayName}\n` +
+      `...\n\n` +
+      `--- Linked accounts ---\n` +
+      `${acctLines}\n\n` +
+      `---\nPlease verify and complete offboarding manually.`
+    );
+  }
+
+  function renderOffboardBody(memberId, data) {
+    const m = data.member;
+    const accounts = data.linkedAccounts;
+
+    const acctHtml = accounts.length
+      ? accounts.map(a => `
+          <div style="display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.85rem">
+            <span style="min-width:90px;font-weight:600">${esc(a.system)}</span>
+            <span style="flex:1">${a.profile_url
+              ? `<a href="${esc(a.profile_url)}" target="_blank" rel="noopener noreferrer">${esc(a.identifier)}</a>`
+              : esc(a.identifier)}</span>
+            <span style="color:${confidenceColor(a.confidence)};font-size:0.75rem;font-weight:700;text-transform:uppercase;white-space:nowrap">${esc(a.confidence)}</span>
+            <span style="color:var(--muted);font-size:0.75rem;white-space:nowrap">${esc(a.match_reason)}</span>
+          </div>`).join('')
+      : '<p style="color:var(--muted);font-size:0.85rem;margin:4px 0">None found.</p>';
+
+    const ccLocal = REQUESTER_MIGADU_LOCAL || '';
+    const ccChecked = REQUESTER_MIGADU_LOCAL !== null;
+    const preview = buildPreview(m, accounts);
+
+    document.getElementById('offboard-body').innerHTML = `
+      <div class="modal-field"><span class="label">Name</span>${esc(m.displayName)}</div>
+      <div class="modal-field"><span class="label">Email</span>${esc(m.email)}</div>
+      <div class="modal-field"><span class="label">Username</span><span style="font-family:monospace">${esc(m.username)}</span></div>
+
+      <div style="margin:14px 0 6px;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Linked accounts</div>
+      <div style="margin-bottom:14px">${acctHtml}</div>
+
+      <details style="margin-bottom:16px">
+        <summary style="cursor:pointer;font-size:0.85rem;color:var(--muted);user-select:none">Email preview</summary>
+        <pre style="margin-top:8px;font-size:0.78rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;white-space:pre-wrap;overflow-wrap:anywhere">${esc(preview)}</pre>
+      </details>
+
+      <form id="offboard-send-form">
+        <input type="hidden" name="member_id" value="${esc(memberId)}">
+        <div style="margin-bottom:14px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.9rem;cursor:pointer">
+            <input type="checkbox" id="cc-check" ${ccChecked ? 'checked' : ''}>
+            Also CC me
+          </label>
+          <div id="cc-row" style="margin-top:8px${ccChecked ? '' : ';display:none'}">
+            <div class="input-group">
+              <input type="text" id="cc-local" name="cc_local_part"
+                     value="${esc(ccLocal)}"
+                     style="max-width:200px"
+                     autocomplete="off" spellcheck="false"
+                     placeholder="your.name">
+              <span class="input-suffix">@${esc(MIGADU_DOMAIN)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="offboard-send-result" style="display:none;margin-bottom:10px"></div>
+        <button type="submit" id="offboard-send-btn" class="btn btn-primary">
+          Send offboarding email to IT
+        </button>
+      </form>
+    `;
+
+    document.getElementById('offboard-loading').style.display = 'none';
+    document.getElementById('offboard-body').style.display = 'block';
+
+    document.getElementById('cc-check').addEventListener('change', e => {
+      document.getElementById('cc-row').style.display = e.target.checked ? '' : 'none';
+    });
+
+    document.getElementById('offboard-send-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('offboard-send-btn');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+
+      const formData = new FormData();
+      formData.append('member_id', memberId);
+      const ccCheck = document.getElementById('cc-check');
+      if (ccCheck && ccCheck.checked) {
+        const ccLocal = document.getElementById('cc-local');
+        formData.append('cc_local_part', (ccLocal ? ccLocal.value.trim() : ''));
+      }
+
+      const resultEl = document.getElementById('offboard-send-result');
+      try {
+        const resp = await fetch('/offboarding/send', { method: 'POST', body: formData });
+        const data = await resp.json();
+        resultEl.style.display = 'block';
+        if (data.ok) {
+          resultEl.className = 'alert alert-success';
+          resultEl.textContent = '✓ Offboarding email sent to IT.';
+          btn.style.display = 'none';
+        } else {
+          resultEl.className = 'alert alert-error';
+          resultEl.textContent = `Error: ${data.error || 'Unknown error'}`;
+          btn.disabled = false;
+          btn.textContent = 'Send offboarding email to IT';
+        }
+      } catch (err) {
+        resultEl.style.display = 'block';
+        resultEl.className = 'alert alert-error';
+        resultEl.textContent = `Error: ${err.message}`;
+        btn.disabled = false;
+        btn.textContent = 'Send offboarding email to IT';
+      }
+    });
+  }
+</script>
+{% endblock %}

@@ -14,6 +14,16 @@
   </p>
 </div>
 
+{% if linked_account_errors is defined and linked_account_errors %}
+<div class="alert alert-warning">
+  <strong>Linked account data may be incomplete.</strong>
+  The following providers failed to load during the last cache refresh:
+  <ul style="margin-top:6px;margin-left:16px">
+    {% for err in linked_account_errors %}<li>{{ err }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
 {% if access_denied %}
 <div class="alert alert-error">You do not have permission to view the organisation overview. Contact your IT administrator.</div>
 {% elif not groups %}
@@ -71,6 +81,7 @@
                         data-activity="{{ member.lastActivity or '' }}"
                         data-badges="{{ member.badges | tojson_attr }}"
                         data-groups="{{ member.groupNames | tojson_attr }}"
+                        data-linkedaccounts="{{ member.linkedAccounts | default([]) | tojson_attr }}"
                         data-disabled="{{ 'true' if member.disabled else 'false' }}"
                         style="padding:2px 8px;font-size:0.75rem;flex-shrink:0">Details</button>
               </div>
@@ -130,10 +141,28 @@
     return (name || '').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
   }
 
+  function confidenceColor(c) {
+    return c === 'confirmed' ? 'var(--green,#22c55e)' : c === 'likely' ? 'var(--yellow,#eab308)' : 'var(--muted)';
+  }
+
+  function renderLinkedAccounts(accounts) {
+    if (!accounts.length) return '<p style="color:var(--muted);font-size:0.85rem;margin:0">None found.</p>';
+    return accounts.map(a => `
+      <div style="display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.85rem">
+        <span style="min-width:90px;font-weight:600">${esc(a.system)}</span>
+        <span style="flex:1">${a.profile_url
+          ? `<a href="${esc(a.profile_url)}" target="_blank" rel="noopener noreferrer">${esc(a.identifier)}</a>`
+          : esc(a.identifier)}</span>
+        <span style="color:${confidenceColor(a.confidence)};font-size:0.75rem;font-weight:700;text-transform:uppercase;white-space:nowrap">${esc(a.confidence)}</span>
+        <span style="color:var(--muted);font-size:0.75rem;white-space:nowrap">${esc(a.match_reason)}</span>
+      </div>`).join('');
+  }
+
   document.querySelectorAll('.member-detail-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const badges = JSON.parse(btn.dataset.badges || '[]');
       const groups = JSON.parse(btn.dataset.groups || '[]');
+      const linkedAccounts = JSON.parse(btn.dataset.linkedaccounts || '[]');
       const disabled = btn.dataset.disabled === 'true';
       const name = btn.dataset.name || '';
       const avatarUrl = `{{ pocketid_base_url }}/api/users/${btn.dataset.userid}/profile-picture.png`;
@@ -165,6 +194,10 @@
         <div class="modal-field"><span class="label">Badges</span>${badgeHtml}</div>
         <div class="modal-field"><span class="label">Last activity</span>${esc(fmtActivity(btn.dataset.activity))}</div>
         <div class="modal-field"><span class="label">Groups</span>${groupHtml}</div>
+        <div style="margin-top:12px">
+          <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">Linked accounts</div>
+          ${renderLinkedAccounts(linkedAccounts)}
+        </div>
       `;
       modal.classList.add('open');
     });

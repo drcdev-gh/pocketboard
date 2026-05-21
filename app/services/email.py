@@ -54,6 +54,75 @@ async def _get_setting(key: str) -> str | None:
         return None
 
 
+async def send_offboarding_email(
+    member: dict,
+    linked_accounts: list,
+    requested_by: dict,
+    cc_email: str | None,
+) -> None:
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+    member_groups = ", ".join(
+        member.get("groups", [])
+        or [g.get("name", "") for g in member.get("userGroups", [])]
+        or []
+    )
+    requester_groups = ", ".join(requested_by.get("groups", []))
+
+    acct_lines = []
+    for acct in linked_accounts:
+        conf = acct["confidence"].upper() if isinstance(acct, dict) else acct.confidence.upper()
+        ident = acct["identifier"] if isinstance(acct, dict) else acct.identifier
+        system = acct["system"] if isinstance(acct, dict) else acct.system
+        reason = acct["match_reason"] if isinstance(acct, dict) else acct.match_reason
+        acct_lines.append(f"  {system:<12} {ident:<35} {conf:<12} ({reason})")
+    accts_section = "\n".join(acct_lines) if acct_lines else "  None found."
+
+    body = (
+        f"Offboarding request: {member.get('displayName', '')}\n"
+        f"Submitted by: {requested_by['name']} ({requested_by['email']})\n"
+        f"Groups: {requester_groups}\n"
+        f"Submitted at: {now}\n"
+        f"\n"
+        f"--- Member ---\n"
+        f"Display name: {member.get('displayName', '')}\n"
+        f"Email:        {member.get('email', '')}\n"
+        f"Username:     {member.get('username', '')}\n"
+        f"Groups:       {member_groups}\n"
+        f"\n"
+        f"--- Linked accounts ---\n"
+        f"{accts_section}\n"
+        f"\n"
+        f"---\n"
+        f"Please verify and complete offboarding manually.\n"
+        f"Sent from Pocketboard.\n"
+    )
+
+    subject = f"Offboarding request: {member.get('displayName', '')}"
+    recipients = [config.linked_accounts_it_email]
+    if cc_email:
+        recipients.append(cc_email)
+
+    msg = MIMEText(body, "plain")
+    msg["Subject"] = subject
+    msg["From"] = f"{config.smtp_from_name} <{config.smtp_from}>"
+    msg["To"] = config.linked_accounts_it_email
+    if cc_email:
+        msg["Cc"] = cc_email
+
+    await aiosmtplib.send(
+        msg,
+        hostname=config.smtp_host,
+        port=config.smtp_port,
+        username=config.smtp_user,
+        password=config.smtp_password,
+        start_tls=True,
+        sender=config.smtp_from,
+        recipients=recipients,
+    )
+
+
 async def send_invite_email(
     to_email: str,
     to_name: str,

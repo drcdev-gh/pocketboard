@@ -8,7 +8,27 @@
       "Bash(gh search *)",
       "Bash(python3 -c \"import json,sys; [print\\(x['fullName'], '-', x.get\\('description',''\\)\\) for x in json.load\\(sys.stdin\\)]\")",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:migadu.com)"
+      "WebFetch(domain:migadu.com)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(python3 *)",
+      "WebSearch",
+      "Bash(grep -E \"\\\\.go$\")",
+      "Bash(~/.docker/bin/pip install *)",
+      "Bash(pip3 --version)",
+      "Bash(~/.docker/bin/docker compose *)",
+      "Bash(git -C /Users/david/workspace/dev/pocketboard status)",
+      "Bash(git -C /Users/david/workspace/dev/pocketboard diff --stat)",
+      "Bash(git *)",
+      "Bash(~/.docker/bin/python3 -m pytest --tb=short -q)",
+      "Bash(~/.docker/bin/python3 *)",
+      "Bash(docker compose *)",
+      "WebFetch(domain:docs.migadu.com)",
+      "WebFetch(domain:www.migadu.com)",
+      "WebFetch(domain:api.mattermost.com)",
+      "WebFetch(domain:developers.mattermost.com)",
+      "WebFetch(domain:docs.mattermost.com)"
     ]
   }
 }

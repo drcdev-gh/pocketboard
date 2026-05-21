@@ -233,6 +233,19 @@ async def get_user_last_activity(user_id: str) -> str | None:
     return result.get(user_id)
 
 
+async def get_user_by_id(user_id: str) -> dict | None:
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{_BASE}/users/{user_id}",
+            headers=_HEADERS,
+            timeout=10,
+        )
+        if resp.status_code == 404:
+            return None
+        resp.raise_for_status()
+        return resp.json()
+
+
 async def user_exists_by_email(email: str) -> bool:
     async with httpx.AsyncClient() as client:
         resp = await client.get(

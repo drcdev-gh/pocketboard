@@ -8,6 +8,7 @@ from app.auth import get_current_user
 from app.config import config
 from app.templating import templates, user_can_overview
 from app.services import pocketid as pid_svc
+from app.services import linked_accounts
 
 
 def _badge_color_class(label: str) -> str:
@@ -22,6 +23,8 @@ _cache_expires: float = 0
 
 
 async def _fetch_groups() -> list[dict]:
+    await linked_accounts.refresh()
+
     raw_groups = await pid_svc.get_all_groups_with_members()
 
     # Collect all active user IDs so get_last_activity can exit early
@@ -67,6 +70,9 @@ async def _fetch_groups() -> list[dict]:
             u["groupNames"] = sorted([
                 group_friendly_names.get(n, n) for n in member_groups
             ])
+            u["linkedAccounts"] = linked_accounts.as_serializable(
+                await linked_accounts.for_member(u)
+            )
             active_members.append(u)
         active_members.sort(key=lambda u: u.get("lastActivity") or "", reverse=True)
         gname = g.get("name", "")
@@ -81,6 +87,17 @@ async def _fetch_groups() -> list[dict]:
 
     groups.sort(key=lambda g: g["friendly_name"].lower() or g["name"].lower())
     return groups, oldest_seen
+
+
+def get_member_from_cache(member_id: str) -> dict | None:
+    """Look up a member by PocketID user ID from the current cache."""
+    if _cache is None:
+        return None
+    for group in _cache:
+        for member in group.get("members", []):
+            if member.get("id") == member_id:
+                return member
+    return None
 
 
 async def refresh_cache() -> None:
@@ -123,4 +140,5 @@ async def org_overview(request: Request):
         "groups": _cache or [],
         "oldest_activity": _cache_oldest[:10] if _cache_oldest else None,
         "show_badges": bool(config.badge_mappings),
+        "linked_account_errors": linked_accounts.get_fetch_errors(),
     })

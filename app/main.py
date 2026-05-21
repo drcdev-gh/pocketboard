@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import config
 from app.database import init_db
-from app.routes import auth, onboard, audit, overview, template
+from app.routes import auth, onboard, audit, overview, template, offboarding
 from app.services import reminders
 
 
@@ -47,3 +47,4 @@ app.include_router(onboard.router)
 app.include_router(audit.router)
 app.include_router(overview.router)
 app.include_router(template.router)
+app.include_router(offboarding.router)

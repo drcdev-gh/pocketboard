@@ -40,6 +40,11 @@ class Config:
         self.badge_mappings_raw = os.environ.get("BADGE_MAPPINGS", "")
         self.webhook_url = os.environ.get("WEBHOOK_URL", "")
 
+        self.mattermost_url = os.environ.get("MATTERMOST_URL", "").rstrip("/")
+        self.mattermost_token = os.environ.get("MATTERMOST_TOKEN", "")
+        self.linked_accounts_it_email = os.environ.get("LINKED_ACCOUNTS_IT_EMAIL", "")
+        self.offboarding_mappings_raw = os.environ.get("OFFBOARDING_MAPPINGS", "")
+
     @property
     def badge_mappings(self) -> Dict[str, str]:
         """Parse BADGE_MAPPINGS: 'Group Name=BADGE;Another=BADGE2' → {group: badge}"""
@@ -93,16 +98,13 @@ class Config:
             return []
         return [g.strip() for g in self.audit_log_clear_groups_raw.split(",") if g.strip()]
 
-    @property
-    def group_mappings(self) -> Dict[str, List[str]]:
-        """
-        Parse GROUP_MAPPINGS env var.
-        Format: caller_group1=target1,target2;caller_group2=target3,target4
-        """
+    @staticmethod
+    def _parse_mappings(raw: str) -> Dict[str, List[str]]:
+        """Parse 'CallerGroup=Target1,Target2;OtherGroup=Target3' into a dict."""
         result: Dict[str, List[str]] = {}
-        if not self.group_mappings_raw:
+        if not raw:
             return result
-        for entry in self.group_mappings_raw.split(";"):
+        for entry in raw.split(";"):
             entry = entry.strip()
             if "=" not in entry:
                 continue
@@ -110,9 +112,12 @@ class Config:
             result[caller_group.strip()] = [t.strip() for t in targets.split(",") if t.strip()]
         return result
 
-    def allowed_target_groups(self, user_groups: List[str]) -> List[str]:
-        """Return target groups allowed for the given user groups, in config definition order."""
-        mappings = self.group_mappings
+    @staticmethod
+    def _allowed_from_mappings(
+        mappings: Dict[str, List[str]],
+        user_groups: List[str],
+    ) -> List[str]:
+        """Return deduplicated target list for the given caller groups, in definition order."""
         user_group_set = set(user_groups)
         seen: set = set()
         allowed: List[str] = []
@@ -123,6 +128,20 @@ class Config:
                         seen.add(target)
                         allowed.append(target)
         return allowed
+
+    @property
+    def group_mappings(self) -> Dict[str, List[str]]:
+        return self._parse_mappings(self.group_mappings_raw)
+
+    @property
+    def offboarding_mappings(self) -> Dict[str, List[str]]:
+        return self._parse_mappings(self.offboarding_mappings_raw)
+
+    def allowed_target_groups(self, user_groups: List[str]) -> List[str]:
+        return self._allowed_from_mappings(self.group_mappings, user_groups)
+
+    def allowed_offboarding_targets(self, user_groups: List[str]) -> List[str]:
+        return self._allowed_from_mappings(self.offboarding_mappings, user_groups)
 
 
 config = Config()
