@@ -40,7 +40,7 @@ async def index(request: Request):
         "request": request,
         "user": user,
         "group_options": group_options,
-        "migadu_domain": config.migadu_domain,
+        "mailbox_domain": config.mailbox_domain,
         "checked_groups": default_groups,
         "rate_used": user_used,
         "rate_max": config.rate_limit_per_user_per_day,
@@ -84,7 +84,7 @@ async def create_invite(
             "request": request,
             "user": user,
             "group_options": group_options,
-            "migadu_domain": config.migadu_domain,
+            "mailbox_domain": config.mailbox_domain,
             "checked_groups": checked_groups,
             "message": message,
             "warning": warning,
@@ -141,7 +141,7 @@ async def create_invite(
     try:
         if await migadu_svc.mailbox_exists(org_local_part):
             return render(error=(
-                f"The organisation email address {org_local_part}@{config.migadu_domain} "
+                f"The organisation email address {org_local_part}@{config.mailbox_domain} "
                 f"already exists. Please choose a different local part or check the audit log."
             ))
     except Exception:
@@ -155,7 +155,7 @@ async def create_invite(
     if not allowed:
         return render(error=reason)
 
-    org_email = f"{org_local_part}@{config.migadu_domain}"
+    org_email = f"{org_local_part}@{config.mailbox_domain}"
     group_list = ", ".join(selected_groups)
 
     try:

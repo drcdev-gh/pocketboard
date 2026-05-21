@@ -60,8 +60,8 @@
 </div>
 
 <script>
-  const MIGADU_DOMAIN = {{ migadu_domain | tojson }};
-  const REQUESTER_MIGADU_LOCAL = {{ requester_migadu_local | tojson }};
+  const MAILBOX_DOMAIN = {{ mailbox_domain | tojson }};
+  const REQUESTER_MAILBOX_LOCAL = {{ requester_mailbox_local | tojson }};
 
   function esc(s) {
     const d = document.createElement('div');
@@ -133,8 +133,8 @@
           </div>`).join('')
       : '<p style="color:var(--muted);font-size:0.85rem;margin:4px 0">None found.</p>';
 
-    const ccLocal = REQUESTER_MIGADU_LOCAL || '';
-    const ccChecked = REQUESTER_MIGADU_LOCAL !== null;
+    const ccLocal = REQUESTER_MAILBOX_LOCAL || '';
+    const ccChecked = REQUESTER_MAILBOX_LOCAL !== null;
     const preview = buildPreview(m, accounts);
 
     document.getElementById('offboard-body').innerHTML = `
@@ -164,7 +164,7 @@
                      style="max-width:200px"
                      autocomplete="off" spellcheck="false"
                      placeholder="your.name">
-              <span class="input-suffix">@${esc(MIGADU_DOMAIN)}</span>
+              <span class="input-suffix">@${esc(MAILBOX_DOMAIN)}</span>
             </div>
           </div>
         </div>

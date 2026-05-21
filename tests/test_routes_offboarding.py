@@ -162,7 +162,7 @@ def test_offboarding_page_shows_warning_when_it_email_not_configured(admin_clien
 
 def test_offboarding_page_prefills_cc_when_requester_has_migadu(admin_client):
     with (
-        patch.object(offboarding_module, "_requester_migadu_local", AsyncMock(return_value="bob.admin")),
+        patch.object(offboarding_module, "_requester_mailbox_local", AsyncMock(return_value="bob.admin")),
         patch(f"{_PID}.get_all_groups_with_members", AsyncMock(return_value=[])),
         patch(f"{_LA}.for_member", AsyncMock(return_value=[])),
     ):
@@ -173,13 +173,13 @@ def test_offboarding_page_prefills_cc_when_requester_has_migadu(admin_client):
 
 def test_offboarding_page_cc_null_when_no_migadu(admin_client):
     with (
-        patch.object(offboarding_module, "_requester_migadu_local", AsyncMock(return_value=None)),
+        patch.object(offboarding_module, "_requester_mailbox_local", AsyncMock(return_value=None)),
         patch(f"{_PID}.get_all_groups_with_members", AsyncMock(return_value=[])),
         patch(f"{_LA}.for_member", AsyncMock(return_value=[])),
     ):
         resp = admin_client.get("/offboarding")
     assert resp.status_code == 200
-    assert "null" in resp.text  # REQUESTER_MIGADU_LOCAL = null in JS
+    assert "null" in resp.text  # REQUESTER_MAILBOX_LOCAL = null in JS
 
 
 # ---------------------------------------------------------------------------

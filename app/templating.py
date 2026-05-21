@@ -57,7 +57,7 @@ def _tojson_attr(value: object) -> Markup:
 
 
 templates.env.filters["tojson_attr"] = _tojson_attr
-templates.env.globals["pocketid_base_url"] = config.pocketid_base_url
+templates.env.globals["identity_base_url"] = config.identity_base_url
 templates.env.globals["user_can_audit"] = user_can_audit
 templates.env.globals["user_can_clear_audit"] = user_can_clear_audit
 templates.env.globals["user_can_overview"] = user_can_overview

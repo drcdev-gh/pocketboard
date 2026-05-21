@@ -20,13 +20,13 @@ async def login_page(request: Request):
 @router.get("/login/start")
 async def login_start(request: Request):
     redirect_uri = f"{config.app_base_url}/auth/callback"
-    return await oauth.pocketid.authorize_redirect(request, redirect_uri, max_age=SESSION_MAX_AGE)
+    return await oauth.identity.authorize_redirect(request, redirect_uri, max_age=SESSION_MAX_AGE)
 
 
 @router.get("/auth/callback")
 async def auth_callback(request: Request):
-    token = await oauth.pocketid.authorize_access_token(request)
-    userinfo = token.get("userinfo") or await oauth.pocketid.userinfo(token=token)
+    token = await oauth.identity.authorize_access_token(request)
+    userinfo = token.get("userinfo") or await oauth.identity.userinfo(token=token)
 
     # Groups may appear as "groups" claim in ID token or userinfo
     groups = userinfo.get("groups", [])

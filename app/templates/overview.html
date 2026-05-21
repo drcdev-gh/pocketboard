@@ -165,7 +165,7 @@
       const linkedAccounts = JSON.parse(btn.dataset.linkedaccounts || '[]');
       const disabled = btn.dataset.disabled === 'true';
       const name = btn.dataset.name || '';
-      const avatarUrl = `{{ pocketid_base_url }}/api/users/${btn.dataset.userid}/profile-picture.png`;
+      const avatarUrl = `{{ identity_base_url }}/api/users/${btn.dataset.userid}/profile-picture.png`;
 
       document.getElementById('member-detail-title').textContent = name || 'Member details';
 

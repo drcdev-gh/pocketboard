@@ -43,14 +43,14 @@
   <div class="form-group">
     <label for="org_local_part">
       Organisation email
-      <span class="hint">@{{ migadu_domain }}</span>
+      <span class="hint">@{{ mailbox_domain }}</span>
     </label>
     <div class="input-group">
       <input type="text" id="org_local_part" name="org_local_part"
              value="{{ form.org_local_part or '' }}"
              placeholder="jane.smith" required autocomplete="off"
              pattern="[a-zA-Z0-9._\-]+" title="Letters, numbers, dots, hyphens only">
-      <span class="input-suffix">@{{ migadu_domain }}</span>
+      <span class="input-suffix">@{{ mailbox_domain }}</span>
     </div>
   </div>
 
@@ -124,7 +124,7 @@
         e.preventDefault();
         document.getElementById('confirm-name').textContent = document.getElementById('invitee_name').value.trim();
         document.getElementById('confirm-email').textContent = document.getElementById('invitee_email').value.trim();
-        document.getElementById('confirm-org').textContent = document.getElementById('org_local_part').value.trim() + '@{{ migadu_domain }}';
+        document.getElementById('confirm-org').textContent = document.getElementById('org_local_part').value.trim() + '@{{ mailbox_domain }}';
         const groups = [...document.querySelectorAll('input[name="selected_groups"]:checked')].map(cb => cb.value);
         document.getElementById('confirm-groups').textContent = groups.join(', ') || '—';
         document.getElementById('confirm-modal').classList.add('open');

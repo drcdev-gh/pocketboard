@@ -501,10 +501,11 @@ def test_email_template_format_string_blocked_does_not_expose_secrets_in_respons
         resp = staff_client.post("/invite", data=_VALID_FORM)
 
     body = resp.text.lower()
-    assert "pocketid_api_key" not in body
+    assert "identity_api_key" not in body
     assert "smtp_password" not in body
-    assert "migadu_api_key" not in body
+    assert "mailbox_api_key" not in body
     assert "test-api-key" not in body
+    assert "test-migadu-key" not in body
     assert "test-smtp-pass" not in body
 
 

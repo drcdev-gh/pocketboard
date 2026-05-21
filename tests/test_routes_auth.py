@@ -42,7 +42,7 @@ def test_login_page_redirects_authenticated_user_to_home(staff_client):
 
 def test_login_start_redirects_to_pocketid(client):
     fake_redirect = RedirectResponse(url="https://id.example.com/auth", status_code=302)
-    with patch("app.routes.auth.oauth.pocketid.authorize_redirect", AsyncMock(return_value=fake_redirect)):
+    with patch("app.routes.auth.oauth.identity.authorize_redirect", AsyncMock(return_value=fake_redirect)):
         response = client.get("/login/start", follow_redirects=False)
     assert response.status_code == 302
     assert "id.example.com" in response.headers["location"]
@@ -61,7 +61,7 @@ def test_auth_callback_success_redirects_to_home(client):
             "groups": ["Staff"],
         }
     }
-    with patch("app.routes.auth.oauth.pocketid.authorize_access_token", AsyncMock(return_value=fake_token)):
+    with patch("app.routes.auth.oauth.identity.authorize_access_token", AsyncMock(return_value=fake_token)):
         response = client.get("/auth/callback?code=abc&state=xyz", follow_redirects=False)
     assert response.status_code == 302
     assert response.headers["location"] == "/"
@@ -76,7 +76,7 @@ def test_auth_callback_stores_user_in_session(client):
             "groups": ["Staff"],
         }
     }
-    with patch("app.routes.auth.oauth.pocketid.authorize_access_token", AsyncMock(return_value=fake_token)):
+    with patch("app.routes.auth.oauth.identity.authorize_access_token", AsyncMock(return_value=fake_token)):
         response = client.get("/auth/callback?code=abc&state=xyz", follow_redirects=False)
 
     cookie = response.cookies.get("pocketboard_session")
@@ -97,7 +97,7 @@ def test_auth_callback_groups_as_string_are_split_into_list(client):
             "groups": "Staff, Admin",
         }
     }
-    with patch("app.routes.auth.oauth.pocketid.authorize_access_token", AsyncMock(return_value=fake_token)):
+    with patch("app.routes.auth.oauth.identity.authorize_access_token", AsyncMock(return_value=fake_token)):
         response = client.get("/auth/callback?code=abc&state=xyz", follow_redirects=False)
 
     cookie = response.cookies.get("pocketboard_session")
@@ -109,7 +109,7 @@ def test_auth_callback_no_groups_defaults_to_empty_list(client):
     fake_token = {
         "userinfo": {"sub": "u-789", "email": "user@example.com", "name": "User"}
     }
-    with patch("app.routes.auth.oauth.pocketid.authorize_access_token", AsyncMock(return_value=fake_token)):
+    with patch("app.routes.auth.oauth.identity.authorize_access_token", AsyncMock(return_value=fake_token)):
         response = client.get("/auth/callback?code=abc&state=xyz", follow_redirects=False)
 
     cookie = response.cookies.get("pocketboard_session")
@@ -122,14 +122,14 @@ def test_auth_callback_missing_sub_raises_key_error(client):
     fake_token = {
         "userinfo": {"email": "user@example.com", "name": "User"}  # no sub
     }
-    with patch("app.routes.auth.oauth.pocketid.authorize_access_token", AsyncMock(return_value=fake_token)):
+    with patch("app.routes.auth.oauth.identity.authorize_access_token", AsyncMock(return_value=fake_token)):
         with pytest.raises(KeyError):
             client.get("/auth/callback?code=abc&state=xyz")
 
 
 def test_auth_callback_oauth_error_raises(client):
     with patch(
-        "app.routes.auth.oauth.pocketid.authorize_access_token",
+        "app.routes.auth.oauth.identity.authorize_access_token",
         AsyncMock(side_effect=Exception("OAuth failed")),
     ):
         with pytest.raises(Exception, match="OAuth failed"):

@@ -139,7 +139,7 @@ async def send_invite_email(
         org_email=org_email,
         invite_url=invite_url,
         group_list=group_list,
-        org_domain=config.migadu_domain,
+        org_domain=config.mailbox_domain,
     )
 
     msg = MIMEText(body, "plain")

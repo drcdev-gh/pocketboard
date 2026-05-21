@@ -3,7 +3,7 @@ from app.config import config
 from app.services.interfaces import MailboxProvider
 
 _BASE = "https://api.migadu.com/v1"
-_AUTH = (config.migadu_api_email, config.migadu_api_key)
+_AUTH = (config.mailbox_api_user, config.mailbox_api_key)
 
 
 class MigaduMailboxProvider(MailboxProvider):
@@ -17,7 +17,7 @@ class MigaduMailboxProvider(MailboxProvider):
     ) -> dict:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                f"{_BASE}/domains/{config.migadu_domain}/mailboxes",
+                f"{_BASE}/domains/{config.mailbox_domain}/mailboxes",
                 auth=_AUTH,
                 json={
                     "local_part": local_part,
@@ -33,7 +33,7 @@ class MigaduMailboxProvider(MailboxProvider):
     async def mailbox_exists(self, local_part: str) -> bool:
         async with httpx.AsyncClient() as client:
             resp = await client.get(
-                f"{_BASE}/domains/{config.migadu_domain}/mailboxes/{local_part}",
+                f"{_BASE}/domains/{config.mailbox_domain}/mailboxes/{local_part}",
                 auth=_AUTH,
                 timeout=10,
             )

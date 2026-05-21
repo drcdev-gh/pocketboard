@@ -7,13 +7,15 @@ from starlette.testclient import TestClient
 from unittest.mock import patch
 
 # Must be set before any app module is imported so Config() reads them.
-os.environ.setdefault("POCKETID_BASE_URL", "https://id.example.com")
-os.environ.setdefault("POCKETID_API_KEY", "test-api-key")
-os.environ.setdefault("POCKETID_CLIENT_ID", "test-client-id")
-os.environ.setdefault("POCKETID_CLIENT_SECRET", "test-client-secret")
-os.environ.setdefault("MIGADU_API_EMAIL", "admin@example.com")
-os.environ.setdefault("MIGADU_API_KEY", "test-migadu-key")
-os.environ.setdefault("MIGADU_DOMAIN", "example.org")
+os.environ.setdefault("IDENTITY_PROVIDER", "pocketid")
+os.environ.setdefault("IDENTITY_BASE_URL", "https://id.example.com")
+os.environ.setdefault("IDENTITY_API_KEY", "test-api-key")
+os.environ.setdefault("IDENTITY_CLIENT_ID", "test-client-id")
+os.environ.setdefault("IDENTITY_CLIENT_SECRET", "test-client-secret")
+os.environ.setdefault("MAILBOX_PROVIDER", "migadu")
+os.environ.setdefault("MAILBOX_API_USER", "admin@example.com")
+os.environ.setdefault("MAILBOX_API_KEY", "test-migadu-key")
+os.environ.setdefault("MAILBOX_DOMAIN", "example.org")
 os.environ.setdefault("SMTP_USER", "noreply@example.org")
 os.environ.setdefault("SMTP_PASSWORD", "test-smtp-pass")
 os.environ.setdefault("APP_SECRET_KEY", "test-secret-key-for-tests!!")

@@ -3,8 +3,8 @@ import httpx
 from app.config import config
 from app.services.interfaces import IdentityProvider
 
-_BASE = f"{config.pocketid_base_url}/api"
-_HEADERS = {"X-API-KEY": config.pocketid_api_key, "Content-Type": "application/json"}
+_BASE = f"{config.identity_base_url}/api"
+_HEADERS = {"X-API-KEY": config.identity_api_key, "Content-Type": "application/json"}
 
 _ACTIVITY_EVENTS = {
     "SIGN_IN",
@@ -67,7 +67,7 @@ class PocketIDIdentityProvider(IdentityProvider):
             return resp.json()
 
     def build_invite_url(self, token: str) -> str:
-        return f"{config.pocketid_base_url}/st/{token}"
+        return f"{config.identity_base_url}/st/{token}"
 
     async def user_exists_by_email(self, email: str) -> bool:
         async with httpx.AsyncClient() as client:

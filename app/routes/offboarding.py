@@ -83,7 +83,7 @@ async def _get_member(member_id: str) -> dict | None:
         return None
 
 
-async def _requester_migadu_local(user: dict) -> str | None:
+async def _requester_mailbox_local(user: dict) -> str | None:
     """Find the requester's own Migadu local part from provider caches."""
     accounts = await linked_accounts.for_member({
         "email": user.get("email", ""),
@@ -93,7 +93,7 @@ async def _requester_migadu_local(user: dict) -> str | None:
     for acct in accounts:
         if acct.system == "Migadu" and "@" in acct.identifier:
             local, domain = acct.identifier.split("@", 1)
-            if domain == config.migadu_domain:
+            if domain == config.mailbox_domain:
                 return local
     return None
 
@@ -110,8 +110,8 @@ async def offboarding_page(request: Request):
             "user": user,
             "access_denied": True,
             "members": [],
-            "migadu_domain": config.migadu_domain,
-            "requester_migadu_local": None,
+            "mailbox_domain": config.mailbox_domain,
+            "requester_mailbox_local": None,
             "it_email_configured": False,
         }, status_code=403)
 
@@ -121,15 +121,15 @@ async def offboarding_page(request: Request):
     except Exception:
         members = []
 
-    requester_local = await _requester_migadu_local(user)
+    requester_local = await _requester_mailbox_local(user)
 
     return templates.TemplateResponse("offboarding.html", {
         "request": request,
         "user": user,
         "access_denied": False,
         "members": members,
-        "migadu_domain": config.migadu_domain,
-        "requester_migadu_local": requester_local,
+        "mailbox_domain": config.mailbox_domain,
+        "requester_mailbox_local": requester_local,
         "it_email_configured": bool(config.linked_accounts_it_email),
     })
 
@@ -181,7 +181,7 @@ async def send_offboarding_email(
         local = cc_local_part.strip()
         if not _validate_cc_local(local):
             return JSONResponse({"error": "Invalid CC email local part"}, status_code=400)
-        cc_email = f"{local}@{config.migadu_domain}"
+        cc_email = f"{local}@{config.mailbox_domain}"
 
     allowed_targets = _allowed_targets(user)
     if not await _member_is_allowed(member_id, allowed_targets):

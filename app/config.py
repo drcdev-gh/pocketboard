@@ -5,14 +5,16 @@ from typing import Dict, List
 
 class Config:
     def __init__(self):
-        self.pocketid_base_url = os.environ["POCKETID_BASE_URL"].rstrip("/")
-        self.pocketid_api_key = os.environ["POCKETID_API_KEY"]
-        self.pocketid_client_id = os.environ["POCKETID_CLIENT_ID"]
-        self.pocketid_client_secret = os.environ["POCKETID_CLIENT_SECRET"]
+        self.identity_provider = os.environ.get("IDENTITY_PROVIDER", "pocketid")
+        self.identity_base_url = os.environ["IDENTITY_BASE_URL"].rstrip("/")
+        self.identity_api_key = os.environ["IDENTITY_API_KEY"]
+        self.identity_client_id = os.environ["IDENTITY_CLIENT_ID"]
+        self.identity_client_secret = os.environ["IDENTITY_CLIENT_SECRET"]
 
-        self.migadu_api_email = os.environ["MIGADU_API_EMAIL"]
-        self.migadu_api_key = os.environ["MIGADU_API_KEY"]
-        self.migadu_domain = os.environ["MIGADU_DOMAIN"]
+        self.mailbox_provider = os.environ.get("MAILBOX_PROVIDER", "migadu")
+        self.mailbox_api_user = os.environ["MAILBOX_API_USER"]
+        self.mailbox_api_key = os.environ["MAILBOX_API_KEY"]
+        self.mailbox_domain = os.environ["MAILBOX_DOMAIN"]
 
         self.smtp_host = os.environ.get("SMTP_HOST", "smtp.migadu.com")
         self.smtp_port = int(os.environ.get("SMTP_PORT", "587"))

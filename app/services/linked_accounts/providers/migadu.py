@@ -10,7 +10,7 @@ from app.services.linked_accounts.base import (
 )
 
 _BASE = "https://api.migadu.com/v1"
-_AUTH = (config.migadu_api_email, config.migadu_api_key)
+_AUTH = (config.mailbox_api_user, config.mailbox_api_key)
 
 
 def _derive_local_part(display_name: str) -> str | None:
@@ -37,7 +37,7 @@ class MigaduProvider(LinkedAccountsProvider):
 
     @property
     def enabled(self) -> bool:
-        return True  # always available; credentials come from existing MIGADU_* config
+        return True  # always available; credentials come from MAILBOX_* config
 
     async def fetch_all(self) -> None:
         mailboxes: list[dict] = []
@@ -46,7 +46,7 @@ class MigaduProvider(LinkedAccountsProvider):
             while True:
                 resp = await get_with_backoff(
                     client,
-                    f"{_BASE}/domains/{config.migadu_domain}/mailboxes",
+                    f"{_BASE}/domains/{config.mailbox_domain}/mailboxes",
                     auth=_AUTH,
                     params={"page": page, "limit": 100},
                     timeout=15,
@@ -92,7 +92,7 @@ class MigaduProvider(LinkedAccountsProvider):
         if not results:
             derived = _derive_local_part(member.get("displayName") or "")
             if derived:
-                expected = f"{derived}@{config.migadu_domain}"
+                expected = f"{derived}@{config.mailbox_domain}"
                 if expected not in known_identifiers:
                     for mb in self._mailboxes:
                         if (mb.get("address") or "").lower() == expected.lower():

@@ -8,10 +8,10 @@ SESSION_MAX_AGE = 86400  # 24 hours
 
 oauth = OAuth()
 oauth.register(
-    name="pocketid",
-    client_id=config.pocketid_client_id,
-    client_secret=config.pocketid_client_secret,
-    server_metadata_url=f"{config.pocketid_base_url}/.well-known/openid-configuration",
+    name="identity",
+    client_id=config.identity_client_id,
+    client_secret=config.identity_client_secret,
+    server_metadata_url=f"{config.identity_base_url}/.well-known/openid-configuration",
     client_kwargs={
         "scope": "openid email profile groups",
         "token_endpoint_auth_method": "client_secret_post",
