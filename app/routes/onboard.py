@@ -135,6 +135,21 @@ async def create_invite(
             "Please try again later or contact your IT administrator."
         ))
 
+    # Pre-check: org email mailbox already exists in Migadu?
+    # Covers both active mailboxes and invitation-pending ones (Migadu provisions
+    # the mailbox immediately on creation regardless of invitation acceptance).
+    try:
+        if await migadu_svc.mailbox_exists(org_local_part):
+            return render(error=(
+                f"The organisation email address {org_local_part}@{config.migadu_domain} "
+                f"already exists. Please choose a different local part or check the audit log."
+            ))
+    except Exception:
+        return render(error=(
+            "Could not verify the organisation email address with the mail server. "
+            "Please try again later or contact your IT administrator."
+        ))
+
     # Rate limit check — runs after pre-checks so rejected duplicates don't consume quota
     allowed, reason = await check_and_record(user["sub"])
     if not allowed:

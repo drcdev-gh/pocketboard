@@ -55,6 +55,7 @@ def test_invite_happy_path_returns_success_message(staff_client, tmp_db):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -71,6 +72,7 @@ def test_invite_creates_audit_log_entry_with_sent_status(staff_client, tmp_db):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -97,6 +99,7 @@ def test_invite_sends_webhook_with_correct_event_and_data(staff_client):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -171,6 +174,7 @@ def test_invite_duplicate_check_is_case_sensitive(staff_client, tmp_db):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -204,6 +208,65 @@ def test_invite_shows_error_when_pocketid_check_fails(staff_client):
     assert "Could not reach the ID management system" in response.text
 
 
+def test_invite_rejects_when_org_mailbox_already_exists_in_migadu(staff_client):
+    """If the org email mailbox already exists in Migadu, the invite must be rejected."""
+    with (
+        patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
+        patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=True)),
+    ):
+        response = staff_client.post("/invite", data=_VALID_FORM)
+    assert response.status_code == 200
+    assert "already exists" in response.text
+
+
+def test_invite_proceeds_when_org_mailbox_does_not_exist(staff_client):
+    """Invite flow must continue when mailbox_exists returns False."""
+    with (
+        patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
+        patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
+        patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
+        patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
+        patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
+        patch("app.services.email.send_invite_email", AsyncMock()),
+        patch(f"{_WEBHOOK}.send", AsyncMock()),
+    ):
+        response = staff_client.post("/invite", data=_VALID_FORM)
+    assert response.status_code == 200
+    assert "Invitation sent successfully" in response.text
+
+
+def test_invite_shows_error_when_migadu_mailbox_check_fails(staff_client):
+    """If the Migadu pre-check itself fails, show a user-friendly error (don't proceed)."""
+    with (
+        patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
+        patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(side_effect=Exception("Migadu unreachable"))),
+    ):
+        response = staff_client.post("/invite", data=_VALID_FORM)
+    assert response.status_code == 200
+    assert "Could not verify the organisation email address" in response.text
+
+
+def test_invite_mailbox_check_happens_before_rate_limit_is_consumed(staff_client, tmp_db):
+    """A rejected duplicate org email must not consume the user's rate-limit quota."""
+    with (
+        patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
+        patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=True)),
+    ):
+        staff_client.post("/invite", data=_VALID_FORM)
+
+    import sqlite3
+    conn = sqlite3.connect(tmp_db)
+    count = conn.execute(
+        "SELECT COUNT(*) FROM rate_limit_log WHERE user_sub = ?", (STAFF_USER["sub"],)
+    ).fetchone()[0]
+    conn.close()
+    assert count == 0
+
+
 # ---------------------------------------------------------------------------
 # POST /invite  — rate limiting
 # ---------------------------------------------------------------------------
@@ -213,6 +276,7 @@ def test_invite_blocked_by_per_user_rate_limit(staff_client, tmp_db):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
     ):
         response = staff_client.post("/invite", data=_VALID_FORM)
     assert response.status_code == 200
@@ -225,6 +289,7 @@ def test_invite_blocked_by_global_rate_limit(staff_client, tmp_db, monkeypatch):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
     ):
         response = staff_client.post("/invite", data=_VALID_FORM)
     assert response.status_code == 200
@@ -236,6 +301,7 @@ def test_invite_rate_limit_consumed_even_when_pocketid_fails(staff_client, tmp_d
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(side_effect=Exception("pid down"))),
     ):
@@ -257,6 +323,7 @@ def test_invite_pocketid_token_creation_failure_shows_error(staff_client):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(side_effect=Exception("PocketID down"))),
     ):
@@ -269,6 +336,7 @@ def test_invite_migadu_failure_shows_error(staff_client):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(side_effect=Exception("Migadu error"))),
@@ -283,6 +351,7 @@ def test_invite_email_send_failure_shows_warning_with_invite_link(staff_client, 
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -298,6 +367,7 @@ def test_invite_email_failure_records_email_failed_status_with_error(staff_clien
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -320,6 +390,7 @@ def test_invite_email_failure_sends_webhook_with_failed_event(staff_client):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -347,6 +418,7 @@ def test_invite_malformed_custom_template_placeholder_causes_email_failure(staff
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),

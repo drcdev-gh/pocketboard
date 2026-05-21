@@ -275,6 +275,7 @@ def test_invite_accepts_valid_dot_and_hyphen_in_middle(staff_client):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -348,6 +349,7 @@ def test_email_header_injection_newline_in_invitee_name_handled_gracefully(staff
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -366,6 +368,7 @@ def test_email_header_injection_newline_in_invitee_email_handled_gracefully(staf
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -397,6 +400,7 @@ def test_email_template_attribute_access_is_blocked(staff_client, tmp_db):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -429,6 +433,7 @@ def test_email_template_subscript_access_is_blocked(staff_client, tmp_db):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -459,6 +464,7 @@ def test_email_template_valid_simple_placeholders_still_work(staff_client, tmp_d
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -486,6 +492,7 @@ def test_email_template_format_string_blocked_does_not_expose_secrets_in_respons
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -516,6 +523,7 @@ def test_redeemable_invite_token_not_stored_in_audit_log(staff_client, tmp_db):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=token_data)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -611,6 +619,7 @@ def test_xss_in_success_message_escaped_in_onboard(staff_client, tmp_db):
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
@@ -746,6 +755,7 @@ def test_duplicate_check_case_sensitivity_is_documented_behaviour(staff_client, 
     with (
         patch(f"{_PID}.list_groups", AsyncMock(return_value=_GROUPS)),
         patch(f"{_PID}.user_exists_by_email", AsyncMock(return_value=False)),
+        patch(f"{_MIG}.mailbox_exists", AsyncMock(return_value=False)),
         patch(f"{_PID}.resolve_group_ids", AsyncMock(return_value=["gid-v"])),
         patch(f"{_PID}.create_signup_token", AsyncMock(return_value=_TOKEN)),
         patch(f"{_MIG}.create_mailbox", AsyncMock(return_value={})),
