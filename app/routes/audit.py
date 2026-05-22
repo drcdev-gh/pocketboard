@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 import uuid
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Request
@@ -15,6 +16,10 @@ from app.services import webhook as webhook_svc
 from app.services import anonymise as anonymise_svc
 
 router = APIRouter()
+
+_INVITE_STATUS_TTL = 2 * 3600  # 2 hours
+_invite_status_cache: dict = {}
+_invite_status_expires: float = 0
 
 
 @router.get("/audit", response_class=HTMLResponse)
@@ -34,13 +39,20 @@ async def audit_log(request: Request, page: int = 1):
             "total": 0,
         }, status_code=403)
 
-    try:
-        registered_emails, token_usage = await asyncio.gather(
-            pid_svc.get_registered_emails(),
-            pid_svc.get_signup_token_usage(),
-        )
-    except Exception:
-        registered_emails, token_usage = set(), {}
+    global _invite_status_cache, _invite_status_expires
+    if time.time() < _invite_status_expires and _invite_status_cache:
+        registered_emails = _invite_status_cache["registered_emails"]
+        token_usage = _invite_status_cache["token_usage"]
+    else:
+        try:
+            registered_emails, token_usage = await asyncio.gather(
+                pid_svc.get_registered_emails(),
+                pid_svc.get_signup_token_usage(),
+            )
+            _invite_status_cache = {"registered_emails": registered_emails, "token_usage": token_usage}
+            _invite_status_expires = time.time() + _INVITE_STATUS_TTL
+        except Exception:
+            registered_emails, token_usage = set(), {}
 
     page_size = 25
     offset = (page - 1) * page_size

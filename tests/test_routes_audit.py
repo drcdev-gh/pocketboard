@@ -4,9 +4,19 @@ import pytest
 from unittest.mock import patch, AsyncMock
 from tests.conftest import db_insert_audit
 from app.config import config as app_config
+import app.routes.audit as audit_module
 
 _PID = "app.services.pocketid"
 _WEBHOOK = "app.services.webhook"
+
+
+@pytest.fixture(autouse=True)
+def reset_invite_status_cache():
+    audit_module._invite_status_cache = {}
+    audit_module._invite_status_expires = 0
+    yield
+    audit_module._invite_status_cache = {}
+    audit_module._invite_status_expires = 0
 
 
 # ---------------------------------------------------------------------------
