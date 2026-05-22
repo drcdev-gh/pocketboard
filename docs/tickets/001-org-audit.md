@@ -1,6 +1,6 @@
 # Organisation Audit
 
-**Status:** open
+**Status:** done
 
 ## Goal
 
@@ -41,6 +41,11 @@ Access follows the same default-deny group pattern as all other restricted pages
    - `migadu_no_pocketid`: mailboxes from `all_migadu_mailboxes()` whose `address` is not in the set of Migadu identifiers matched across all cached members
 5. **`main.py`**: Include the new router.
 6. **`templates/org_audit.html`**: Extends `base.html`. Two sections — one table per mismatch type. Displays member name/email and mailbox address respectively. Shows a warning banner if the cache is cold or linked account fetch errors are present.
+
+## Related tickets
+
+- Future: whitelist/ignore mechanism for aliases and mailing lists that will never have a PocketID account (not yet filed)
+- Future: extend audit to additional linked account providers such as Mattermost (not yet filed)
 
 ## Acceptance criteria
 

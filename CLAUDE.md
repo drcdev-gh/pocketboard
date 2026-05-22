@@ -26,11 +26,13 @@ Tickets live in `docs/tickets/NNN-slug.md`. Use `/new-ticket` to create one inte
 When asked to implement a ticket:
 1. Read `docs/architecture.md`
 2. Read the ticket file
-3. Read only the source files the ticket touches — avoid broad exploration
-4. Implement and test
-5. Review the code, specifically with a focus on security
-6. Review the code for GDPR relevancy and prompt the user for potentially needed changes
-7. Do a final review, check that the test coverage is good and commit
+3. Read any tickets listed in the ticket's **Related tickets** section for additional context
+4. Read only the source files the ticket touches — avoid broad exploration
+5. Implement and test
+6. Review the code, specifically with a focus on security
+7. Review the code for GDPR relevancy and prompt the user for potentially needed changes
+8. Update `docs/architecture.md` to reflect any new modules, routes, schema changes, or background tasks introduced
+9. Do a final review, check that the test coverage is good and commit
 
 ## Commit style
 

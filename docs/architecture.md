@@ -7,6 +7,7 @@
 Pocketboard is a self-hosted member management portal for an organisation. Authorised staff can:
 - **Onboard** new members (creates a Pocket ID account invite + Migadu mailbox, sends invitation email)
 - **View** an organisation overview (all members, groups, linked accounts, last activity)
+- **Audit** account mismatches between PocketID and Migadu (orphaned or unknown accounts)
 - **Offboard** departing members (sends a structured summary email to the IT address)
 - **Audit** every invite and offboarding action
 
@@ -44,6 +45,7 @@ app/
     onboard.py              — / (invite form), /invite (POST)
     audit.py                — /audit (paginated log), /audit/clear, /audit/anonymise
     offboarding.py          — /offboarding, /offboarding/accounts/{id}, /offboarding/send
+    org_audit.py            — /org-audit (read-only account mismatch view for IT admins)
     overview.py             — /overview, in-process member cache
     template.py             — /email-template (GET/POST)
   services/
@@ -237,6 +239,7 @@ All access is **default-deny**. Permissions are configured via environment varia
 | `AUDIT_LOG_GROUPS` | Who can view the audit log |
 | `AUDIT_LOG_CLEAR_GROUPS` | Who can clear or anonymise the audit log |
 | `ORG_OVERVIEW_GROUPS` | Who can view the organisation overview |
+| `ORG_AUDIT_GROUPS` | Who can view the organisation audit (account mismatch page) |
 | `EMAIL_TEMPLATE_GROUPS` | Who can edit the invitation email template |
 
 Permission checks live in `templating.py` (`user_can_*` functions) and are called both in route handlers and in Jinja2 templates (registered as globals).

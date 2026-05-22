@@ -18,6 +18,7 @@ Based on the answers, produce a full draft using the structure below. Use your k
 - Write a concrete **Proposed approach** if the user didn't specify one
 - Write specific, testable **Acceptance criteria**
 - Surface any genuine **Open questions** that need resolving before or during implementation
+- Scan the existing files in `docs/tickets/` and add a **Related tickets** section listing any tickets that share scope, are dependencies, or are explicitly called out as future follow-ups. Link by filename (e.g. `001-org-audit.md`). Omit the section if there are no related tickets.
 
 Show the draft to the user and ask: "Does this look right, or do you want to change anything?"
 
@@ -34,7 +35,7 @@ Iterate until the user approves.
 
 Ask: "Want me to start implementing this now, or are you saving it for later?"
 
-If they want to start: read `docs/architecture.md`, re-read the ticket, then implement.
+If they want to start: read `docs/architecture.md`, re-read the ticket, read any tickets listed in the **Related tickets** section for additional context, then implement.
 
 ---
 
@@ -76,4 +77,10 @@ If new routes are needed, describe them.]
 ## Open questions
 
 [Things to resolve before or during implementation. Delete section if none.]
+
+## Related tickets
+
+[Links to tickets that share scope, are dependencies, or are called out as follow-ups.
+Format: `- NNN-slug.md — one-line note on the relationship`
+Delete section if none.]
 ```

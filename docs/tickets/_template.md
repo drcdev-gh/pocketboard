@@ -37,3 +37,8 @@ Status: open | in-progress | done
 ## Open questions
 
 <!-- Things to resolve before or during implementation. -->
+
+## Related tickets
+
+<!-- Tickets that share scope, are dependencies, or are called out as follow-ups.
+     Format: - NNN-slug.md — one-line note on the relationship -->
