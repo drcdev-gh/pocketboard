@@ -49,6 +49,7 @@ services:
       AUDIT_LOG_CLEAR_GROUPS: ${AUDIT_LOG_CLEAR_GROUPS:-}
       EMAIL_TEMPLATE_GROUPS: ${EMAIL_TEMPLATE_GROUPS:-}
       ORG_OVERVIEW_GROUPS: ${ORG_OVERVIEW_GROUPS:-}
+      ORG_AUDIT_GROUPS: ${ORG_AUDIT_GROUPS:-}
       # Badge mappings for organisation overview
       BADGE_MAPPINGS: ${BADGE_MAPPINGS:-}
       # Webhook notifications (optional)
