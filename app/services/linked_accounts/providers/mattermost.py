@@ -30,11 +30,14 @@ class MattermostProvider(LinkedAccountsProvider):
         headers = {"Authorization": f"Bearer {config.mattermost_token}"}
         async with httpx.AsyncClient() as client:
             while True:
+                params: dict = {"page": page, "per_page": 200}
+                if config.mattermost_team_id:
+                    params["in_team"] = config.mattermost_team_id
                 resp = await get_with_backoff(
                     client,
                     f"{config.mattermost_url}/api/v4/users",
                     headers=headers,
-                    params={"page": page, "per_page": 200},
+                    params=params,
                     timeout=15,
                 )
                 items = resp.json()

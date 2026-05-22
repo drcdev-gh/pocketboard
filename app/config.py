@@ -49,6 +49,7 @@ class Config:
 
         self.mattermost_url = os.environ.get("MATTERMOST_URL", "").rstrip("/")
         self.mattermost_token = os.environ.get("MATTERMOST_TOKEN", "")
+        self.mattermost_team_id = os.environ.get("MATTERMOST_TEAM_ID", "")
         self.linked_accounts_it_email = os.environ.get("LINKED_ACCOUNTS_IT_EMAIL", "")
         self.offboarding_mappings_raw = os.environ.get("OFFBOARDING_MAPPINGS", "")
         self.org_audit_groups_raw = os.environ.get("ORG_AUDIT_GROUPS", "")

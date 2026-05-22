@@ -44,6 +44,7 @@ services:
       # Mattermost linked-account discovery (optional)
       MATTERMOST_URL: ${MATTERMOST_URL:-}
       MATTERMOST_TOKEN: ${MATTERMOST_TOKEN:-}
+      MATTERMOST_TEAM_ID: ${MATTERMOST_TEAM_ID:-}
       # Access control (all default-deny)
       AUDIT_LOG_GROUPS: ${AUDIT_LOG_GROUPS:-}
       AUDIT_LOG_CLEAR_GROUPS: ${AUDIT_LOG_CLEAR_GROUPS:-}

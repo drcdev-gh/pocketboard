@@ -320,6 +320,35 @@ async def test_mattermost_provider_enabled_with_config(monkeypatch):
     monkeypatch.setattr(app_config, "mattermost_token", "tok")
     assert MattermostProvider().enabled is True
 
+@respx.mock
+@pytest.mark.anyio
+async def test_mattermost_provider_fetch_all_sends_team_filter_when_configured(monkeypatch):
+    from app.config import config as app_config
+    monkeypatch.setattr(app_config, "mattermost_url", "https://mattermost.example.com")
+    monkeypatch.setattr(app_config, "mattermost_token", "test-token")
+    monkeypatch.setattr(app_config, "mattermost_team_id", "team-uuid-123")
+    route = respx.get(_MM_USERS).mock(return_value=Response(200, json=[
+        {"id": "mm-1", "email": "u@ext.com", "username": "user1"}
+    ]))
+    p = MattermostProvider()
+    await p.fetch_all()
+    assert route.called
+    assert route.calls[0].request.url.params["in_team"] == "team-uuid-123"
+
+@respx.mock
+@pytest.mark.anyio
+async def test_mattermost_provider_fetch_all_no_team_filter_when_not_configured(monkeypatch):
+    from app.config import config as app_config
+    monkeypatch.setattr(app_config, "mattermost_url", "https://mattermost.example.com")
+    monkeypatch.setattr(app_config, "mattermost_token", "test-token")
+    monkeypatch.setattr(app_config, "mattermost_team_id", "")
+    route = respx.get(_MM_USERS).mock(return_value=Response(200, json=[
+        {"id": "mm-1", "email": "u@ext.com", "username": "user1"}
+    ]))
+    p = MattermostProvider()
+    await p.fetch_all()
+    assert "in_team" not in route.calls[0].request.url.params
+
 @pytest.mark.anyio
 async def test_mattermost_provider_fetch_all_skipped_when_disabled(monkeypatch):
     from app.config import config as app_config
