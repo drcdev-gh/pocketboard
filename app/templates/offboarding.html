@@ -12,7 +12,7 @@
 {% elif not it_email_configured %}
 <div class="alert alert-warning"><strong>Offboarding email not configured.</strong> Set <code>LINKED_ACCOUNTS_IT_EMAIL</code> to enable sending offboarding requests.</div>
 
-{% elif not members %}
+{% elif not members and not offboarded_members %}
 <div class="card empty-state">
   <p>No members found for your permitted groups.</p>
 </div>
@@ -25,6 +25,7 @@
 </div>
 {% endif %}
 
+{% if members %}
 <div class="card table-card">
   <div style="display:flex;justify-content:flex-end;padding:8px 16px 0">
     <span style="font-size:0.85rem;color:{% if rate_remaining <= 0 %}var(--red){% elif rate_remaining <= 2 %}var(--red){% elif rate_remaining <= 4 %}var(--yellow){% else %}var(--muted){% endif %}">
@@ -58,6 +59,38 @@
     </tbody>
   </table>
 </div>
+{% endif %}
+
+{% if offboarded_members %}
+<div class="card table-card" style="margin-top:24px">
+  <div style="padding:16px 16px 8px">
+    <h2 style="font-size:1rem;font-weight:600;margin:0 0 4px">Recently Offboarded</h2>
+    <p style="font-size:0.85rem;color:var(--muted);margin:0">
+      These members have a pending offboarding request. Once their Pocket ID account is disabled by IT, they will disappear from this list automatically (within 12 hours).
+    </p>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Requested</th>
+        <th>Audit log</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in offboarded_members %}
+      <tr>
+        <td>{{ m.displayName }}</td>
+        <td class="text-muted" style="font-size:0.9rem">{{ m.email or '—' }}</td>
+        <td class="text-muted" style="font-size:0.9rem">{{ m.offboarded_at[:10] }}</td>
+        <td style="font-size:0.9rem"><a href="/audit">#{{ m.audit_log_id }}</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 {% endif %}
 
 <!-- Offboarding modal -->

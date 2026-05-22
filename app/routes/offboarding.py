@@ -122,6 +122,30 @@ async def offboarding_page(request: Request):
     except Exception:
         members = []
 
+    async with get_db() as db:
+        cursor = await db.execute(
+            """SELECT id, invitee_email, created_at
+               FROM audit_log
+               WHERE status = 'offboarding_requested'
+                 AND anonymised_at IS NULL
+               ORDER BY created_at DESC"""
+        )
+        pending_rows = await cursor.fetchall()
+
+    pending: dict[str, dict] = {}
+    for row_id, email, created_at in pending_rows:
+        if email not in pending:
+            pending[email] = {"audit_log_id": row_id, "offboarded_at": created_at}
+
+    active_members: list[dict] = []
+    offboarded_members: list[dict] = []
+    for m in members:
+        email = m.get("email", "")
+        if email and email in pending:
+            offboarded_members.append({**m, **pending[email]})
+        else:
+            active_members.append(m)
+
     requester_local = await _requester_mailbox_local(user)
     rate_used, _ = await get_offboarding_usage(user["sub"])
 
@@ -129,7 +153,8 @@ async def offboarding_page(request: Request):
         "request": request,
         "user": user,
         "access_denied": False,
-        "members": members,
+        "members": active_members,
+        "offboarded_members": offboarded_members,
         "mailbox_domain": config.mailbox_domain,
         "requester_mailbox_local": requester_local,
         "it_email_configured": bool(config.linked_accounts_it_email),

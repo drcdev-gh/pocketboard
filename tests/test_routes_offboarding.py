@@ -11,7 +11,7 @@ import app.routes.overview as overview_module
 import app.routes.offboarding as offboarding_module
 import app.services.linked_accounts as la_registry
 from app.services.linked_accounts.base import LinkedAccount
-from tests.conftest import STAFF_USER, ADMIN_USER, db_insert_offboarding_rate_limit
+from tests.conftest import STAFF_USER, ADMIN_USER, db_insert_offboarding_rate_limit, db_insert_audit
 
 _PID = "app.services.pocketid"
 _EMAIL = "app.services.email"
@@ -221,6 +221,90 @@ def test_offboarding_page_buttons_enabled_when_limit_not_reached(admin_client, t
     assert resp.status_code == 200
     # The limit-specific disabled marker must not appear when quota is available
     assert 'Daily limit reached' not in resp.text
+
+
+def test_offboarding_page_moves_pending_member_to_recently_offboarded(admin_client, tmp_db):
+    db_insert_audit(tmp_db,
+        invitee_email=_OFFBOARDABLE_MEMBER["email"],
+        invitee_name=_OFFBOARDABLE_MEMBER["displayName"],
+        status="offboarding_requested",
+        org_email="",
+        pocketid_token_id="",
+        groups="[]",
+    )
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    assert "Recently Offboarded" in resp.text
+    assert f'data-member-id="{_OFFBOARDABLE_MEMBER["id"]}"' not in resp.text
+    assert _OFFBOARDABLE_MEMBER["displayName"] in resp.text
+
+
+def test_offboarding_page_no_recently_offboarded_section_when_none_pending(admin_client, tmp_db):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    assert "Recently Offboarded" not in resp.text
+
+
+def test_offboarding_page_shows_audit_log_link_for_pending_member(admin_client, tmp_db):
+    db_insert_audit(tmp_db,
+        invitee_email=_OFFBOARDABLE_MEMBER["email"],
+        invitee_name=_OFFBOARDABLE_MEMBER["displayName"],
+        status="offboarding_requested",
+        org_email="",
+        pocketid_token_id="",
+        groups="[]",
+    )
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    assert 'href="/audit"' in resp.text
+    assert "#1" in resp.text  # first audit log row inserted gets id=1
+
+
+def test_offboarding_page_excludes_anonymised_entries_from_pending(admin_client, tmp_db):
+    db_insert_audit(tmp_db,
+        invitee_email=_OFFBOARDABLE_MEMBER["email"],
+        invitee_name="[anonymised]",
+        status="offboarding_requested",
+        org_email="",
+        pocketid_token_id="",
+        groups="[]",
+        anonymised_at="2024-01-01T00:00:00",
+    )
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    assert "Recently Offboarded" not in resp.text
+    assert f'data-member-id="{_OFFBOARDABLE_MEMBER["id"]}"' in resp.text
+
+
+def test_offboarding_page_empty_state_only_when_both_lists_empty(admin_client, tmp_db):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [], "fetch_error": False, "badge": None,
+    }]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    assert "No members found" in resp.text
 
 
 # ---------------------------------------------------------------------------
