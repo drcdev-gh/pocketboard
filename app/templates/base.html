@@ -21,12 +21,12 @@
     {% if user %}
     <button class="navbar-toggle" id="navbar-toggle" aria-label="Toggle menu">&#9776;</button>
     <nav class="navbar-nav">
-      <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">New Invite</a>
-      {% if user_can_audit(user) %}<a href="/audit" class="{% if request.url.path == '/audit' %}active{% endif %}">Audit Log</a>{% endif %}
       {% if user_can_overview(user) %}<a href="/overview" class="{% if request.url.path == '/overview' %}active{% endif %}">Organisation Overview</a>{% endif %}
-      {% if user_can_edit_template(user) %}<a href="/email-template" class="{% if request.url.path == '/email-template' %}active{% endif %}">Email Template</a>{% endif %}
-      {% if user_can_offboard(user) %}<a href="/offboarding" class="{% if request.url.path == '/offboarding' %}active{% endif %}">Offboarding</a>{% endif %}
       {% if user_can_org_audit(user) %}<a href="/org-audit" class="{% if request.url.path == '/org-audit' %}active{% endif %}">Organisation Audit</a>{% endif %}
+      {% if user_can_audit(user) %}<a href="/audit" class="{% if request.url.path == '/audit' %}active{% endif %}">Audit Log</a>{% endif %}
+      {% if user_can_edit_template(user) %}<a href="/email-template" class="{% if request.url.path == '/email-template' %}active{% endif %}">Email Template</a>{% endif %}
+      <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">New Invite</a>
+      {% if user_can_offboard(user) %}<a href="/offboarding" class="{% if request.url.path == '/offboarding' %}active{% endif %}">Offboarding</a>{% endif %}
     </nav>
     <div class="navbar-user">
       <select id="theme-picker" class="theme-picker" aria-label="Colour theme">
