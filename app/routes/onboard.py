@@ -190,7 +190,7 @@ async def create_invite(
         )
     except Exception as exc:
         async with get_db() as db:
-            await db.execute(
+            cursor = await db.execute(
                 """INSERT INTO audit_log
                    (created_by_sub, created_by_email, created_by_name,
                     invitee_name, invitee_email, org_email,
@@ -201,19 +201,12 @@ async def create_invite(
                  token_data["id"], json.dumps(selected_groups),
                  "email_failed", str(exc), invite_id),
             )
+            audit_log_id = cursor.lastrowid
             await db.commit()
         await webhook_svc.send(
             event="invite_email_failed",
-            text=(
-                f"⚠️ **Invite created but email delivery failed**\n"
-                f"**Sent by:** {user['name']} ({user['email']})\n"
-                f"**Invitee:** {invitee_name} ({invitee_email})\n"
-                f"**Org email:** {org_email}\n"
-                f"**Groups:** {group_list}"
-            ),
-            data={"created_by_name": user["name"], "created_by_email": user["email"],
-                  "invitee_name": invitee_name, "invitee_email": invitee_email,
-                  "org_email": org_email, "groups": selected_groups, "invite_id": invite_id},
+            text=f"⚠️ **Invite created but email delivery failed** — groups: {group_list} — see audit log #{audit_log_id}",
+            data={"audit_log_id": audit_log_id, "groups": selected_groups},
         )
         return render(
             warning=(
@@ -227,7 +220,7 @@ async def create_invite(
         )
 
     async with get_db() as db:
-        await db.execute(
+        cursor = await db.execute(
             """INSERT INTO audit_log
                (created_by_sub, created_by_email, created_by_name,
                 invitee_name, invitee_email, org_email,
@@ -238,20 +231,13 @@ async def create_invite(
              token_data["id"], json.dumps(selected_groups),
              "sent", invite_id),
         )
+        audit_log_id = cursor.lastrowid
         await db.commit()
 
     await webhook_svc.send(
         event="invite_sent",
-        text=(
-            f"✅ **Invite sent successfully**\n"
-            f"**Sent by:** {user['name']} ({user['email']})\n"
-            f"**Invitee:** {invitee_name} ({invitee_email})\n"
-            f"**Org email:** {org_email}\n"
-            f"**Groups:** {group_list}"
-        ),
-        data={"created_by_name": user["name"], "created_by_email": user["email"],
-              "invitee_name": invitee_name, "invitee_email": invitee_email,
-              "org_email": org_email, "groups": selected_groups, "invite_id": invite_id},
+        text=f"✅ **Invite sent** — groups: {group_list} — see audit log #{audit_log_id}",
+        data={"audit_log_id": audit_log_id, "groups": selected_groups},
     )
 
     return render(

@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from datetime import datetime, timezone, timedelta
 
@@ -18,7 +19,7 @@ async def check_expiring_invites() -> None:
 
     async with get_db() as db:
         async with db.execute(
-            """SELECT id, invitee_name, invitee_email, pocketid_token_id, created_at
+            """SELECT id, invitee_name, invitee_email, pocketid_token_id, groups, created_at
                FROM audit_log
                WHERE status IN ('sent', 'email_failed')
                  AND reminder_sent_at IS NULL
@@ -61,15 +62,18 @@ async def check_expiring_invites() -> None:
 
     for entry in to_notify:
         hours_str = f"~{entry['hours_left']}h" if entry["hours_left"] is not None else "soon"
+        groups = json.loads(entry["groups"]) if entry.get("groups") else []
+        group_list = ", ".join(groups)
         await webhook_svc.send(
             event="invite_expiring_soon",
             text=(
-                f"⏰ **Invite expiring {hours_str}** — "
-                f"{entry['invitee_name']} ({entry['invitee_email']}) has not yet registered"
+                f"⏰ **Invite expiring {hours_str}**"
+                + (f" — groups: {group_list}" if group_list else "")
+                + f" — see audit log #{entry['id']}"
             ),
             data={
-                "invitee_name": entry["invitee_name"],
-                "invitee_email": entry["invitee_email"],
+                "audit_log_id": entry["id"],
+                "groups": groups,
                 "hours_remaining": entry["hours_left"],
             },
         )

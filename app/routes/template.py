@@ -95,7 +95,7 @@ async def save_email_template(
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 (key, value),
             )
-        await db.execute(
+        cursor = await db.execute(
             """INSERT INTO audit_log
                (created_by_sub, created_by_email, created_by_name,
                 invitee_name, invitee_email, org_email,
@@ -104,12 +104,13 @@ async def save_email_template(
             (user["sub"], user["email"], user["name"],
              "", "", "", "", "[]", "template_changed", str(uuid.uuid4())),
         )
+        audit_log_id = cursor.lastrowid
         await db.commit()
 
     await webhook_svc.send(
         event="email_template_changed",
-        text=f"✏️ **Invitation email template updated** by {user['name']} ({user['email']})",
-        data={"updated_by_name": user["name"], "updated_by_email": user["email"]},
+        text=f"✏️ **Invitation email template updated** — see audit log #{audit_log_id}",
+        data={"audit_log_id": audit_log_id},
     )
 
     return RedirectResponse(url="/email-template?saved=1", status_code=303)
@@ -126,7 +127,7 @@ async def reset_email_template(request: Request):
 
     async with get_db() as db:
         await db.execute("DELETE FROM settings WHERE key IN ('email_template', 'email_subject')")
-        await db.execute(
+        cursor = await db.execute(
             """INSERT INTO audit_log
                (created_by_sub, created_by_email, created_by_name,
                 invitee_name, invitee_email, org_email,
@@ -135,12 +136,13 @@ async def reset_email_template(request: Request):
             (user["sub"], user["email"], user["name"],
              "", "", "", "", "[]", "template_changed", str(uuid.uuid4())),
         )
+        audit_log_id = cursor.lastrowid
         await db.commit()
 
     await webhook_svc.send(
         event="email_template_reset",
-        text=f"↩️ **Invitation email template reset to default** by {user['name']} ({user['email']})",
-        data={"reset_by_name": user["name"], "reset_by_email": user["email"]},
+        text=f"↩️ **Invitation email template reset to default** — see audit log #{audit_log_id}",
+        data={"audit_log_id": audit_log_id},
     )
 
     return RedirectResponse(url="/email-template?reset=1", status_code=303)

@@ -112,8 +112,9 @@ def test_invite_sends_webhook_with_correct_event_and_data(staff_client):
     call = mock_wh.call_args
     assert call.kwargs["event"] == "invite_sent"
     data = call.kwargs["data"]
-    assert data["invitee_email"] == "jane@external.com"
-    assert data["org_email"] == "janedoe@example.org"
+    assert "audit_log_id" in data
+    assert "invitee_email" not in data
+    assert "org_email" not in data
     assert "Volunteers" in data["groups"]
 
 

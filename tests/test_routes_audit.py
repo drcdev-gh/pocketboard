@@ -184,7 +184,8 @@ def test_audit_clear_sends_webhook_with_correct_event(admin_client):
     mock_wh.assert_called_once()
     call = mock_wh.call_args
     assert call.kwargs["event"] == "audit_log_cleared"
-    assert call.kwargs["data"]["cleared_by_email"] == "bob@example.com"
+    assert "audit_log_id" in call.kwargs["data"]
+    assert "cleared_by_email" not in call.kwargs["data"]
 
 
 # ---------------------------------------------------------------------------

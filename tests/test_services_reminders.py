@@ -104,8 +104,11 @@ async def test_expiring_unregistered_invite_sends_webhook(db):
     mock_wh.assert_called_once()
     call = mock_wh.call_args
     assert call.kwargs["event"] == "invite_expiring_soon"
-    assert call.kwargs["data"]["invitee_email"] == "alice@external.com"
-    assert call.kwargs["data"]["hours_remaining"] is not None
+    data = call.kwargs["data"]
+    assert "audit_log_id" in data
+    assert "invitee_email" not in data
+    assert data["hours_remaining"] is not None
+    assert "Volunteers" in data["groups"]
 
 
 async def test_email_failed_status_also_triggers_reminder(db):

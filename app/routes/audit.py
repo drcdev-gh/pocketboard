@@ -110,7 +110,7 @@ async def clear_audit_log(request: Request):
 
     async with get_db() as db:
         await db.execute("DELETE FROM audit_log WHERE status != 'log_cleared'")
-        await db.execute(
+        cursor = await db.execute(
             """INSERT INTO audit_log
                (created_by_sub, created_by_email, created_by_name,
                 invitee_name, invitee_email, org_email,
@@ -119,12 +119,13 @@ async def clear_audit_log(request: Request):
             (user["sub"], user["email"], user["name"],
              "", "", "", "", "[]", "log_cleared", str(uuid.uuid4())),
         )
+        audit_log_id = cursor.lastrowid
         await db.commit()
 
     await webhook_svc.send(
         event="audit_log_cleared",
-        text=f"🗑️ **Audit log cleared** by {user['name']} ({user['email']})",
-        data={"cleared_by_name": user["name"], "cleared_by_email": user["email"]},
+        text=f"🗑️ **Audit log cleared** — see audit log #{audit_log_id}",
+        data={"audit_log_id": audit_log_id},
     )
 
     return RedirectResponse(url="/audit", status_code=303)
