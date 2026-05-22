@@ -10,6 +10,7 @@
 <div class="alert alert-warning">
   <strong>Invite status guide:</strong>
   <ul style="margin-top:6px;margin-left:16px;line-height:1.8">
+    <li><strong>Accepted</strong> — the member has completed account setup and exists in the ID management system.</li>
     <li><strong>Not yet registered</strong> — invite sent and link is still valid; the member has not yet completed account setup.</li>
     <li><strong>Expired</strong> — the invite link has timed out and the member has not registered. Note: their email mailbox may have been created, but no account exists in the ID management system. Contact your IT administrator if this needs to be resolved.</li>
   </ul>
@@ -65,7 +66,9 @@
         <td>
           {% set status_labels = {"sent": "Sent", "email_failed": "Email failed", "offboarding_requested": "Offboarding requested", "log_cleared": "Log cleared", "template_changed": "Template changed", "users_anonymised": "Users anonymised"} %}
           <span class="status status-{{ e.status }}">{{ status_labels.get(e.status, e.status) }}</span>
-          {% if e.invite_expired %}
+          {% if e.invite_accepted %}
+          <div style="margin-top:4px"><span class="badge badge-accepted">Accepted</span></div>
+          {% elif e.invite_expired %}
           <div style="margin-top:4px"><span class="badge badge-expired">Expired</span></div>
           {% elif e.pending_registration %}
           <div style="margin-top:4px"><span class="badge badge-pending">Not yet registered</span></div>

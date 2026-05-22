@@ -36,6 +36,7 @@ html { scroll-behavior: smooth; }
 [data-theme="dark"] .alert-error   { background: rgba(248,113,113,.12); border-color: #f87171; }
 [data-theme="dark"] .alert-warning { background: rgba(251,191,36,.12);  border-color: #fbbf24; }
 [data-theme="dark"] .badge         { background: rgba(96,165,250,.15); border-color: rgba(96,165,250,.3); }
+[data-theme="dark"] .badge-accepted { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); color: #86efac; }
 [data-theme="dark"] .badge-pending { background: rgba(251,191,36,.15); border-color: rgba(251,191,36,.4); color: #fbbf24; }
 [data-theme="dark"] .badge-expired { background: rgba(248,113,113,.15); border-color: rgba(248,113,113,.4); color: #f87171; }
 
@@ -327,6 +328,7 @@ body {
 .status-email_failed { color: var(--yellow); }
 .status-failed { color: var(--red); }
 .status-log_cleared { color: var(--muted); }
+.badge-accepted { background:#dcfce7; color:#15803d; border-color:#bbf7d0; }
 .badge-pending { background:#fffbeb; color:#92400e; border-color:#fcd34d; }
 .badge-expired { background:#fef2f2; color:#c81e1e; border-color:#fca5a5; }
 

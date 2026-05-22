@@ -72,10 +72,13 @@ async def audit_log(request: Request, page: int = 1):
             entry["groups"] = []
         entry["pending_registration"] = False
         entry["invite_expired"] = False
+        entry["invite_accepted"] = False
         if entry["status"] in ("sent", "email_failed"):
             email_registered = entry["invitee_email"].lower() in registered_emails
             token_used = token_usage.get(entry.get("pocketid_token_id", ""), 0) >= 1
-            if not email_registered and not token_used:
+            if email_registered or token_used:
+                entry["invite_accepted"] = True
+            else:
                 try:
                     created = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
                     if created + ttl < now:

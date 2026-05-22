@@ -61,7 +61,7 @@ def test_audit_pending_when_email_not_registered_and_token_unused(admin_client, 
     assert "pending" in response.text.lower()
 
 
-def test_audit_not_pending_when_email_registered_in_pocketid(admin_client, tmp_db):
+def test_audit_shows_accepted_when_email_registered_in_pocketid(admin_client, tmp_db):
     db_insert_audit(tmp_db, status="sent", pocketid_token_id="tok-abc",
                     invitee_email="registered@external.com")
     with (
@@ -70,12 +70,12 @@ def test_audit_not_pending_when_email_registered_in_pocketid(admin_client, tmp_d
     ):
         response = admin_client.get("/audit")
     assert response.status_code == 200
-    # Should NOT show as pending — the person has registered
+    assert "Accepted" in response.text
     assert "pending" not in response.text.lower()
 
 
-def test_audit_not_pending_when_token_used(admin_client, tmp_db):
-    """Token used ≥ 1 means the invite was accepted — should not show as pending."""
+def test_audit_shows_accepted_when_token_used(admin_client, tmp_db):
+    """Token used ≥ 1 means the invite was accepted — should show Accepted badge."""
     db_insert_audit(tmp_db, status="sent", pocketid_token_id="tok-used",
                     invitee_email="notinpocketid@external.com")
     with (
@@ -84,6 +84,7 @@ def test_audit_not_pending_when_token_used(admin_client, tmp_db):
     ):
         response = admin_client.get("/audit")
     assert response.status_code == 200
+    assert "Accepted" in response.text
     assert "pending" not in response.text.lower()
 
 
