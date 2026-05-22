@@ -40,8 +40,17 @@ def test_derive_local_part_single_word_returns_none():
 def test_derive_local_part_empty_returns_none():
     assert _derive_local_part("") is None
 
-def test_derive_local_part_non_ascii_name_returns_none():
-    assert _derive_local_part("Jäne Döe") is None
+def test_derive_local_part_umlaut_normalises():
+    assert _derive_local_part("Jäne Döe") == "jaene.doee"
+
+def test_derive_local_part_german_umlaut():
+    assert _derive_local_part("Hans Müller") == "hans.mueller"
+
+def test_derive_local_part_czech_diacritics():
+    assert _derive_local_part("Jan Němeček") == "jan.nemecek"
+
+def test_derive_local_part_hyphenated_name_returns_none():
+    assert _derive_local_part("Jean-Luc Picard") is None
 
 def test_derive_local_part_numeric_name_returns_none():
     assert _derive_local_part("Jane 123") is None
@@ -261,6 +270,36 @@ async def test_migadu_provider_empty_cache_returns_empty():
     p = MigaduProvider()
     results = await p.match(_MEMBER, set())
     assert results == []
+
+@pytest.mark.anyio
+async def test_migadu_provider_match_org_domain_email(monkeypatch):
+    from app.config import config as app_config
+    monkeypatch.setattr(app_config, "mailbox_domain", "example.org")
+    member = {**_MEMBER, "email": "jane.doe@example.org"}
+    p = MigaduProvider()
+    results = await p.match(member, set())
+    org_match = [r for r in results if r.match_reason == "org domain email"]
+    assert len(org_match) == 1
+    assert org_match[0].identifier == "jane.doe@example.org"
+    assert org_match[0].confidence == "likely"
+    assert org_match[0].system == "Migadu"
+
+@pytest.mark.anyio
+async def test_migadu_provider_org_domain_email_skipped_if_known(monkeypatch):
+    from app.config import config as app_config
+    monkeypatch.setattr(app_config, "mailbox_domain", "example.org")
+    member = {**_MEMBER, "email": "jane.doe@example.org"}
+    p = MigaduProvider()
+    results = await p.match(member, {"jane.doe@example.org"})
+    assert not any(r.match_reason == "org domain email" for r in results)
+
+@pytest.mark.anyio
+async def test_migadu_provider_no_org_domain_match_for_external_email(monkeypatch):
+    from app.config import config as app_config
+    monkeypatch.setattr(app_config, "mailbox_domain", "example.org")
+    p = MigaduProvider()
+    results = await p.match(_MEMBER, set())  # _MEMBER email is jane@personal.com
+    assert not any(r.match_reason == "org domain email" for r in results)
 
 
 # ---------------------------------------------------------------------------

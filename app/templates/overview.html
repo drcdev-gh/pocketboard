@@ -148,13 +148,13 @@
   function renderLinkedAccounts(accounts) {
     if (!accounts.length) return '<p style="color:var(--muted);font-size:0.85rem;margin:0">None found.</p>';
     return accounts.map(a => `
-      <div style="display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.85rem">
+      <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:0.85rem">
         <span style="min-width:90px;font-weight:600">${esc(a.system)}</span>
-        <span style="flex:1">${a.profile_url
+        <span style="flex:1;min-width:0;word-break:break-all">${a.profile_url
           ? `<a href="${esc(a.profile_url)}" target="_blank" rel="noopener noreferrer">${esc(a.identifier)}</a>`
           : esc(a.identifier)}</span>
         <span style="color:${confidenceColor(a.confidence)};font-size:0.75rem;font-weight:700;text-transform:uppercase;white-space:nowrap">${esc(a.confidence)}</span>
-        <span style="color:var(--muted);font-size:0.75rem;white-space:nowrap">${esc(a.match_reason)}</span>
+        <span style="color:var(--muted);font-size:0.75rem;word-break:break-word">${esc(a.match_reason)}</span>
       </div>`).join('');
   }
 

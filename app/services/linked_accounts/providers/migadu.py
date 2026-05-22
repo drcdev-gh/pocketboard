@@ -1,4 +1,5 @@
 import asyncio
+import unicodedata
 
 import httpx
 
@@ -12,17 +13,24 @@ from app.services.linked_accounts.base import (
 _BASE = "https://api.migadu.com/v1"
 _AUTH = (config.mailbox_api_user, config.mailbox_api_key)
 
+# Multi-character substitutions must run before NFKD stripping (ä→a would lose the 'e').
+_MULTI_CHAR_SUBS = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"})
+
+
+def _normalize_ascii(s: str) -> str:
+    s = s.translate(_MULTI_CHAR_SUBS)
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+
 
 def _derive_local_part(display_name: str) -> str | None:
     """'Jane Doe' → 'jane.doe'. Returns None if the name can't be cleanly derived."""
     parts = display_name.strip().split()
     if len(parts) < 2:
         return None
-    first = parts[0].lower()
-    last = parts[-1].lower()
+    first = _normalize_ascii(parts[0].lower())
+    last = _normalize_ascii(parts[-1].lower())
     local = f"{first}.{last}"
-    # Apply the same character constraints as the org_local_part validator
-    if local.isascii() and local.replace(".", "").isalpha():
+    if local.replace(".", "").isalpha():
         return local
     return None
 
@@ -71,6 +79,17 @@ class MigaduProvider(LinkedAccountsProvider):
     ) -> list[LinkedAccount]:
         email = (member.get("email") or "").lower().strip()
         results: list[LinkedAccount] = []
+
+        # If the member's PocketID email is on the org domain it's likely their org mailbox
+        if email and email.endswith(f"@{config.mailbox_domain}") and email not in known_identifiers:
+            results.append(
+                LinkedAccount(
+                    system="Migadu",
+                    identifier=email,
+                    confidence="likely",
+                    match_reason="org domain email",
+                )
+            )
 
         # Primary: match by recovery email
         for mb in self._mailboxes:
