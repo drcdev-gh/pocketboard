@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-header">
   <h1>Offboarding</h1>
-  <p class="text-muted">Members eligible for offboarding based on your group permissions.</p>
+  <p class="text-muted">Initiate an offboarding request for a member.</p>
 </div>
 
 {% if access_denied %}
@@ -18,6 +18,10 @@
 </div>
 
 {% else %}
+<div class="alert" style="background:var(--bg);border:1px solid var(--border);font-size:0.875rem;margin-bottom:1.25rem">
+  <strong>Who is shown?</strong> Only members whose groups fall entirely within your permitted scope are listed.
+  <strong>What does Offboard do?</strong> It sends a summary email to IT for manual action — no accounts are deleted or disabled automatically.
+</div>
 {% set rate_remaining = rate_max - rate_used %}
 {% if rate_remaining <= 0 %}
 <div class="alert alert-error">
@@ -109,6 +113,8 @@
 <script>
   const MAILBOX_DOMAIN = {{ mailbox_domain | tojson }};
   const REQUESTER_MAILBOX_LOCAL = {{ requester_mailbox_local | tojson }};
+  const REQUESTER_NAME = {{ user.name | tojson }};
+  const REQUESTER_EMAIL = {{ user.email | tojson }};
 
   function esc(s) {
     const d = document.createElement('div');
@@ -149,19 +155,46 @@
     });
   });
 
-  function buildPreview(member, accounts) {
+  function buildPreview(member, accounts, note) {
+    const now = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+    const groups = (member.groupNames || []).join(', ') || '—';
     const acctLines = accounts.length
       ? accounts.map(a =>
           `  ${a.system.padEnd(12)} ${a.identifier.padEnd(35)} ${a.confidence.toUpperCase().padEnd(12)} (${a.match_reason})`
         ).join('\n')
       : '  None found.';
-    return (
+
+    const ccCheckEl = document.getElementById('cc-check');
+    const ccLocalEl = document.getElementById('cc-local');
+    const ccEmail = (ccCheckEl && ccCheckEl.checked && ccLocalEl && ccLocalEl.value.trim())
+      ? `${ccLocalEl.value.trim()}@${MAILBOX_DOMAIN}` : null;
+    const requesterOrg = REQUESTER_MAILBOX_LOCAL ? `${REQUESTER_MAILBOX_LOCAL}@${MAILBOX_DOMAIN}` : null;
+    const replyTo = ccEmail || requesterOrg;
+    const requesterOrgLine = replyTo ? `Org email:    ${replyTo}\n` : '';
+
+    let body = (
       `Offboarding request: ${member.displayName}\n` +
-      `...\n\n` +
+      `Submitted at: ${now}\n` +
+      `\n` +
+      `--- Member ---\n` +
+      `Display name: ${member.displayName}\n` +
+      `Email:        ${member.email}\n` +
+      `Username:     ${member.username}\n` +
+      `Groups:       ${groups}\n` +
+      `\n` +
+      `--- Requested by ---\n` +
+      `Name:         ${REQUESTER_NAME}\n` +
+      `Email:        ${REQUESTER_EMAIL}\n` +
+      requesterOrgLine +
+      `\n` +
       `--- Linked accounts ---\n` +
-      `${acctLines}\n\n` +
-      `---\nPlease verify and complete offboarding manually.`
+      `${acctLines}\n`
     );
+    if (note && note.trim()) {
+      body += `\n--- Note ---\n${note.trim()}\n`;
+    }
+    body += `\n---\nPlease verify and complete offboarding manually.\nSent from Pocketboard.`;
+    return body;
   }
 
   function renderOffboardBody(memberId, data) {
@@ -182,7 +215,6 @@
 
     const ccLocal = REQUESTER_MAILBOX_LOCAL || '';
     const ccChecked = REQUESTER_MAILBOX_LOCAL !== null;
-    const preview = buildPreview(m, accounts);
 
     document.getElementById('offboard-body').innerHTML = `
       <div class="modal-field"><span class="label">Name</span>${esc(m.displayName)}</div>
@@ -192,13 +224,16 @@
       <div style="margin:14px 0 6px;font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Linked accounts</div>
       <div style="margin-bottom:14px">${acctHtml}</div>
 
-      <details style="margin-bottom:16px">
-        <summary style="cursor:pointer;font-size:0.85rem;color:var(--muted);user-select:none">Email preview</summary>
-        <pre style="margin-top:8px;font-size:0.78rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;white-space:pre-wrap;overflow-wrap:anywhere">${esc(preview)}</pre>
-      </details>
-
       <form id="offboard-send-form">
         <input type="hidden" name="member_id" value="${esc(memberId)}">
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:0.85rem;font-weight:600;margin-bottom:4px">Note for IT <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+          <textarea id="offboard-note" name="note" rows="3"
+                    style="width:100%;font-size:0.85rem;padding:8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);resize:vertical"
+                    maxlength="500" placeholder="Any additional context for the IT team…"></textarea>
+        </div>
+
         <div style="margin-bottom:14px">
           <label style="display:flex;align-items:center;gap:8px;font-size:0.9rem;cursor:pointer">
             <input type="checkbox" id="cc-check" ${ccChecked ? 'checked' : ''}>
@@ -216,6 +251,11 @@
           </div>
         </div>
 
+        <details style="margin-bottom:16px">
+          <summary style="cursor:pointer;font-size:0.85rem;color:var(--muted);user-select:none">Email preview</summary>
+          <pre id="offboard-preview" style="margin-top:8px;font-size:0.78rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+        </details>
+
         <div id="offboard-send-result" style="display:none;margin-bottom:10px"></div>
         <button type="submit" id="offboard-send-btn" class="btn btn-primary">
           Send offboarding email to IT
@@ -226,9 +266,19 @@
     document.getElementById('offboard-loading').style.display = 'none';
     document.getElementById('offboard-body').style.display = 'block';
 
+    function updatePreview() {
+      const noteEl = document.getElementById('offboard-note');
+      const pre = document.getElementById('offboard-preview');
+      if (pre) pre.textContent = buildPreview(m, accounts, noteEl ? noteEl.value : '');
+    }
+    updatePreview();
+
     document.getElementById('cc-check').addEventListener('change', e => {
       document.getElementById('cc-row').style.display = e.target.checked ? '' : 'none';
+      updatePreview();
     });
+    document.getElementById('cc-local').addEventListener('input', updatePreview);
+    document.getElementById('offboard-note').addEventListener('input', updatePreview);
 
     document.getElementById('offboard-send-form').addEventListener('submit', async e => {
       e.preventDefault();
@@ -242,6 +292,10 @@
       if (ccCheck && ccCheck.checked) {
         const ccLocal = document.getElementById('cc-local');
         formData.append('cc_local_part', (ccLocal ? ccLocal.value.trim() : ''));
+      }
+      const noteEl = document.getElementById('offboard-note');
+      if (noteEl && noteEl.value.trim()) {
+        formData.append('note', noteEl.value.trim());
       }
 
       const resultEl = document.getElementById('offboard-send-result');

@@ -59,6 +59,8 @@ async def send_offboarding_email(
     linked_accounts: list,
     requested_by: dict,
     cc_email: str | None,
+    reply_to: str | None = None,
+    note: str = "",
 ) -> None:
     if config.demo_mode:
         print(f"[demo] send_offboarding_email suppressed for {member.get('displayName', '')!r}")
@@ -66,12 +68,14 @@ async def send_offboarding_email(
     from datetime import datetime, timezone
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
-    member_groups = ", ".join(
-        member.get("groups", [])
+    member_groups_raw = (
+        member.get("groupNames")
+        or member.get("groupMemberships")
+        or member.get("groups")
         or [g.get("name", "") for g in member.get("userGroups", [])]
         or []
     )
-    requester_groups = ", ".join(requested_by.get("groups", []))
+    member_groups = ", ".join(member_groups_raw) if member_groups_raw else "—"
 
     acct_lines = []
     for acct in linked_accounts:
@@ -82,10 +86,10 @@ async def send_offboarding_email(
         acct_lines.append(f"  {system:<12} {ident:<35} {conf:<12} ({reason})")
     accts_section = "\n".join(acct_lines) if acct_lines else "  None found."
 
+    requester_org_line = f"Org email:    {reply_to}\n" if reply_to else ""
+
     body = (
         f"Offboarding request: {member.get('displayName', '')}\n"
-        f"Submitted by: {requested_by['name']} ({requested_by['email']})\n"
-        f"Groups: {requester_groups}\n"
         f"Submitted at: {now}\n"
         f"\n"
         f"--- Member ---\n"
@@ -94,8 +98,19 @@ async def send_offboarding_email(
         f"Username:     {member.get('username', '')}\n"
         f"Groups:       {member_groups}\n"
         f"\n"
+        f"--- Requested by ---\n"
+        f"Name:         {requested_by['name']}\n"
+        f"Email:        {requested_by['email']}\n"
+        f"{requester_org_line}"
+        f"\n"
         f"--- Linked accounts ---\n"
         f"{accts_section}\n"
+    )
+
+    if note:
+        body += f"\n--- Note ---\n{note}\n"
+
+    body += (
         f"\n"
         f"---\n"
         f"Please verify and complete offboarding manually.\n"
@@ -113,6 +128,8 @@ async def send_offboarding_email(
     msg["To"] = config.linked_accounts_it_email
     if cc_email:
         msg["Cc"] = cc_email
+    if reply_to:
+        msg["Reply-To"] = reply_to
 
     await aiosmtplib.send(
         msg,

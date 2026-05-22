@@ -530,6 +530,105 @@ def test_send_with_valid_cc(admin_client, tmp_db):
     assert captured.get("cc_email") == "bob.admin@example.org"
 
 
+def test_send_reply_to_set_to_cc_when_present(admin_client, tmp_db):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    captured = {}
+
+    async def _capture(**kwargs):
+        captured.update(kwargs)
+
+    with (
+        patch(f"{_LA}.for_member", AsyncMock(return_value=[])),
+        patch(f"{_EMAIL}.send_offboarding_email", AsyncMock(side_effect=_capture)),
+        patch.object(offboarding_module, "_requester_mailbox_local", AsyncMock(return_value="bob.admin")),
+    ):
+        admin_client.post(
+            "/offboarding/send",
+            data={"member_id": _OFFBOARDABLE_MEMBER["id"], "cc_local_part": "bob.admin"},
+        )
+    assert captured.get("reply_to") == "bob.admin@example.org"
+
+
+def test_send_reply_to_falls_back_to_requester_org_when_no_cc(admin_client, tmp_db):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    captured = {}
+
+    async def _capture(**kwargs):
+        captured.update(kwargs)
+
+    with (
+        patch(f"{_LA}.for_member", AsyncMock(return_value=[])),
+        patch(f"{_EMAIL}.send_offboarding_email", AsyncMock(side_effect=_capture)),
+        patch.object(offboarding_module, "_requester_mailbox_local", AsyncMock(return_value="bob.admin")),
+    ):
+        admin_client.post(
+            "/offboarding/send",
+            data={"member_id": _OFFBOARDABLE_MEMBER["id"]},
+        )
+    assert captured.get("reply_to") == "bob.admin@example.org"
+
+
+def test_send_reply_to_none_when_no_cc_and_no_requester_org(admin_client, tmp_db):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    captured = {}
+
+    async def _capture(**kwargs):
+        captured.update(kwargs)
+
+    with (
+        patch(f"{_LA}.for_member", AsyncMock(return_value=[])),
+        patch(f"{_EMAIL}.send_offboarding_email", AsyncMock(side_effect=_capture)),
+        patch.object(offboarding_module, "_requester_mailbox_local", AsyncMock(return_value=None)),
+    ):
+        admin_client.post(
+            "/offboarding/send",
+            data={"member_id": _OFFBOARDABLE_MEMBER["id"]},
+        )
+    assert captured.get("reply_to") is None
+
+
+def test_send_note_passed_to_email(admin_client, tmp_db):
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [_OFFBOARDABLE_MEMBER], "fetch_error": False, "badge": None,
+    }]
+    captured = {}
+
+    async def _capture(**kwargs):
+        captured.update(kwargs)
+
+    with (
+        patch(f"{_LA}.for_member", AsyncMock(return_value=[])),
+        patch(f"{_EMAIL}.send_offboarding_email", AsyncMock(side_effect=_capture)),
+    ):
+        admin_client.post(
+            "/offboarding/send",
+            data={"member_id": _OFFBOARDABLE_MEMBER["id"], "note": "  Revoke VPN too.  "},
+        )
+    assert captured.get("note") == "Revoke VPN too."
+
+
+def test_accounts_endpoint_returns_group_names(admin_client):
+    member_with_groups = {**_OFFBOARDABLE_MEMBER, "groupNames": ["Volunteers"]}
+    overview_module._cache = [{
+        "name": "Volunteers", "friendly_name": "V",
+        "members": [member_with_groups], "fetch_error": False, "badge": None,
+    }]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get(f"/offboarding/accounts/{_OFFBOARDABLE_MEMBER['id']}")
+    assert resp.status_code == 200
+    assert resp.json()["member"]["groupNames"] == ["Volunteers"]
+
+
 def test_send_rejects_invalid_cc_local_part(admin_client):
     overview_module._cache = [{
         "name": "Volunteers", "friendly_name": "V",

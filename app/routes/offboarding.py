@@ -201,6 +201,7 @@ async def get_member_accounts(request: Request, member_id: str):
             "displayName": member.get("displayName", ""),
             "email": member.get("email", ""),
             "username": member.get("username", ""),
+            "groupNames": member.get("groupNames", []),
         },
         "linkedAccounts": linked_accounts.as_serializable(accounts),
     })
@@ -211,6 +212,7 @@ async def send_offboarding_email(
     request: Request,
     member_id: str = Form(...),
     cc_local_part: str = Form(default=""),
+    note: str = Form(default=""),
 ):
     user = get_current_user(request)
     if not user:
@@ -241,12 +243,17 @@ async def send_offboarding_email(
 
     accounts = await linked_accounts.for_member(member)
 
+    requester_local = await _requester_mailbox_local(user)
+    reply_to = cc_email or (f"{requester_local}@{config.mailbox_domain}" if requester_local else None)
+
     try:
         await email_svc.send_offboarding_email(
             member=member,
             linked_accounts=accounts,
             requested_by=user,
             cc_email=cc_email,
+            reply_to=reply_to,
+            note=note.strip(),
         )
     except Exception as exc:
         return JSONResponse({"error": f"Failed to send email: {exc}"}, status_code=500)

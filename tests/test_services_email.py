@@ -287,6 +287,20 @@ async def test_send_offboarding_email_linked_accounts_as_dataclasses():
     assert "POSSIBLE" in body
 
 
+async def test_send_offboarding_email_member_groups_from_groupNames():
+    member = {**_MEMBER, "groupNames": ["Volunteers", "Members"], "groups": []}
+    with patch("aiosmtplib.send", new_callable=AsyncMock) as mock_send:
+        await send_offboarding_email(
+            member=member,
+            linked_accounts=[],
+            requested_by=_REQUESTER,
+            cc_email=None,
+        )
+    body = mock_send.call_args[0][0].get_payload(decode=True).decode("utf-8")
+    assert "Volunteers" in body
+    assert "Members" in body
+
+
 async def test_send_offboarding_email_member_groups_from_userGroups_fallback():
     member_no_groups = {
         "displayName": "Sam Smith",
@@ -304,6 +318,75 @@ async def test_send_offboarding_email_member_groups_from_userGroups_fallback():
     body = mock_send.call_args[0][0].get_payload(decode=True).decode("utf-8")
     assert "Staff" in body
     assert "Leads" in body
+
+
+async def test_send_offboarding_email_reply_to_set_when_provided():
+    with patch("aiosmtplib.send", new_callable=AsyncMock) as mock_send:
+        await send_offboarding_email(
+            member=_MEMBER,
+            linked_accounts=[],
+            requested_by=_REQUESTER,
+            cc_email="bob@example.org",
+            reply_to="bob@example.org",
+        )
+    msg = mock_send.call_args[0][0]
+    assert msg["Reply-To"] == "bob@example.org"
+
+
+async def test_send_offboarding_email_reply_to_absent_when_not_provided():
+    with patch("aiosmtplib.send", new_callable=AsyncMock) as mock_send:
+        await send_offboarding_email(
+            member=_MEMBER,
+            linked_accounts=[],
+            requested_by=_REQUESTER,
+            cc_email=None,
+            reply_to=None,
+        )
+    msg = mock_send.call_args[0][0]
+    assert msg["Reply-To"] is None
+
+
+async def test_send_offboarding_email_note_included_when_provided():
+    with patch("aiosmtplib.send", new_callable=AsyncMock) as mock_send:
+        await send_offboarding_email(
+            member=_MEMBER,
+            linked_accounts=[],
+            requested_by=_REQUESTER,
+            cc_email=None,
+            note="Please also revoke VPN access.",
+        )
+    body = mock_send.call_args[0][0].get_payload(decode=True).decode("utf-8")
+    assert "--- Note ---" in body
+    assert "Please also revoke VPN access." in body
+
+
+async def test_send_offboarding_email_note_absent_when_empty():
+    with patch("aiosmtplib.send", new_callable=AsyncMock) as mock_send:
+        await send_offboarding_email(
+            member=_MEMBER,
+            linked_accounts=[],
+            requested_by=_REQUESTER,
+            cc_email=None,
+            note="",
+        )
+    body = mock_send.call_args[0][0].get_payload(decode=True).decode("utf-8")
+    assert "--- Note ---" not in body
+
+
+async def test_send_offboarding_email_requester_section_in_body():
+    with patch("aiosmtplib.send", new_callable=AsyncMock) as mock_send:
+        await send_offboarding_email(
+            member=_MEMBER,
+            linked_accounts=[],
+            requested_by=_REQUESTER,
+            cc_email=None,
+            reply_to="admin@example.org",
+        )
+    body = mock_send.call_args[0][0].get_payload(decode=True).decode("utf-8")
+    assert "--- Requested by ---" in body
+    assert "Admin User" in body
+    assert "admin@example.org" in body
+    assert "Org email:" in body
 
 
 async def test_send_offboarding_email_no_linked_accounts_shows_none_found():
