@@ -147,6 +147,21 @@ body {
   cursor: pointer;
 }
 
+/* ── Demo banner ── */
+.demo-banner {
+  background: #fffbeb;
+  border-bottom: 1px solid #fcd34d;
+  color: #92400e;
+  font-size: 0.875rem;
+  padding: 10px 24px;
+  text-align: center;
+}
+[data-theme="dark"] .demo-banner {
+  background: rgba(251,191,36,.1);
+  border-color: rgba(251,191,36,.35);
+  color: #fbbf24;
+}
+
 /* ── Layout ── */
 .container {
   max-width: 780px;

@@ -1,0 +1,47 @@
+services:
+  pocketboard:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    tmpfs:
+      - /data
+    environment:
+      DEMO_MODE: "true"
+      # Identity provider — fake values, never contacted in demo mode
+      IDENTITY_BASE_URL: "https://id.demo.example.org"
+      IDENTITY_API_KEY: "demo-api-key"
+      IDENTITY_CLIENT_ID: "demo-client-id"
+      IDENTITY_CLIENT_SECRET: "demo-client-secret"
+      # Mailbox provider — fake values, never contacted in demo mode
+      MAILBOX_API_USER: "admin@demo.example.org"
+      MAILBOX_API_KEY: "demo-migadu-key"
+      MAILBOX_DOMAIN: "demo.example.org"
+      # SMTP — suppressed in demo mode
+      SMTP_HOST: "smtp.demo.example.org"
+      SMTP_PORT: "587"
+      SMTP_USER: "noreply@demo.example.org"
+      SMTP_PASSWORD: "demo-smtp-pass"
+      SMTP_FROM_NAME: "Demo Onboarding"
+      # Application
+      APP_SECRET_KEY: "demo-secret-key-for-local-preview-only-do-not-use-in-production"
+      APP_BASE_URL: "http://localhost:8000"
+      # Rate limits
+      RATE_LIMIT_PER_USER_PER_DAY: "10"
+      RATE_LIMIT_GLOBAL_PER_DAY: "100"
+      OFFBOARDING_RATE_LIMIT_PER_USER_PER_DAY: "5"
+      OFFBOARDING_RATE_LIMIT_GLOBAL_PER_DAY: "20"
+      # Invite settings
+      INVITE_TTL: "168h"
+      INVITE_USAGE_LIMIT: "1"
+      # Access control — demo admin user is in "Staff"
+      GROUP_MAPPINGS: "Staff=Volunteers,Members"
+      DEFAULT_SELECTED_GROUPS: "Volunteers"
+      OFFBOARDING_MAPPINGS: "Staff=Volunteers,Members"
+      LINKED_ACCOUNTS_IT_EMAIL: "it@demo.example.org"
+      AUDIT_LOG_GROUPS: "Staff"
+      AUDIT_LOG_CLEAR_GROUPS: "Staff"
+      ORG_OVERVIEW_GROUPS: "Staff"
+      ORG_AUDIT_GROUPS: "Staff"
+      EMAIL_TEMPLATE_GROUPS: "Staff"
+      BADGE_MAPPINGS: "Staff=STAFF"

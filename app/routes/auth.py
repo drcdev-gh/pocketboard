@@ -1,3 +1,5 @@
+import time
+
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -12,6 +14,11 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
+    if config.demo_mode:
+        from app.services.demo import DEMO_USER
+        request.session["user"] = DEMO_USER
+        request.session["auth_time"] = time.time()
+        return RedirectResponse(url="/", status_code=302)
     if get_current_user(request):
         return RedirectResponse(url="/", status_code=302)
     return templates.TemplateResponse("login.html", {"request": request})
@@ -19,12 +26,16 @@ async def login_page(request: Request):
 
 @router.get("/login/start")
 async def login_start(request: Request):
+    if config.demo_mode:
+        return RedirectResponse(url="/", status_code=302)
     redirect_uri = f"{config.app_base_url}/auth/callback"
     return await oauth.identity.authorize_redirect(request, redirect_uri, max_age=SESSION_MAX_AGE)
 
 
 @router.get("/auth/callback")
 async def auth_callback(request: Request):
+    if config.demo_mode:
+        return RedirectResponse(url="/", status_code=302)
     token = await oauth.identity.authorize_access_token(request)
     userinfo = token.get("userinfo") or await oauth.identity.userinfo(token=token)
 
@@ -33,7 +44,6 @@ async def auth_callback(request: Request):
     if isinstance(groups, str):
         groups = [g.strip() for g in groups.split(",") if g.strip()]
 
-    import time
     request.session["user"] = {
         "sub": userinfo["sub"],
         "email": userinfo.get("email", ""),

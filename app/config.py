@@ -5,6 +5,8 @@ from typing import Dict, List
 
 class Config:
     def __init__(self):
+        self.demo_mode = os.environ.get("DEMO_MODE", "").lower() in ("1", "true", "yes")
+
         self.identity_provider = os.environ.get("IDENTITY_PROVIDER", "pocketid")
         self.identity_base_url = os.environ["IDENTITY_BASE_URL"].rstrip("/")
         self.identity_api_key = os.environ["IDENTITY_API_KEY"]

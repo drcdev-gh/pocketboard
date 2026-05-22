@@ -50,7 +50,9 @@ app/
     template.py             — /email-template (GET/POST)
   services/
     anonymise.py            — GDPR anonymisation of offboarded users (manual + scheduled)
-    email.py                — Send invite and offboarding emails via SMTP
+    demo.py                 — Demo-mode providers: DemoIdentityProvider, DemoMailboxProvider, DemoMigaduLinkedAccountsProvider; fake member/group/mailbox data
+    demo_seed.py            — Seed audit_log with realistic demo entries on startup (DEMO_MODE only)
+    email.py                — Send invite and offboarding emails via SMTP (no-op in demo mode)
     pocketid.py             — Pocket ID admin API: users, groups, signup tokens, last activity
     migadu.py               — Migadu API: mailbox existence checks, mailbox creation
     reminders.py            — Background job: webhook alerts for expiring invite links
@@ -69,6 +71,7 @@ tests/                      — pytest (async, aiosqlite, TestClient)
 docs/
   architecture.md           — This file
   tickets/                  — Feature specs / work items
+docker-compose.demo.yml     — Self-contained demo compose: DEMO_MODE=true, all fake credentials, tmpfs /data
 ```
 
 ---
@@ -254,6 +257,32 @@ Permission checks live in `templating.py` (`user_can_*` functions) and are calle
 - `linked_accounts.for_member()` for cross-referencing
 
 **Implication:** if a member is deleted from Pocket ID, they remain visible in the app for up to 12h. This is a known, accepted trade-off.
+
+---
+
+## Demo mode
+
+Set `DEMO_MODE=true` (or `1` / `yes`) to run the app against fake data with no external services required.
+
+```
+docker compose -f docker-compose.demo.yml up
+```
+
+**What changes in demo mode:**
+
+| Concern | Production | Demo |
+|---|---|---|
+| Login | OIDC redirect to Pocket ID | `/login` immediately writes a demo admin session |
+| Identity provider | `PocketIDIdentityProvider` | `DemoIdentityProvider` — fake users/groups/tokens |
+| Mailbox provider | `MigaduMailboxProvider` | `DemoMailboxProvider` — no-op creates, fake exists checks |
+| Linked accounts | Migadu HTTP API | `DemoMigaduLinkedAccountsProvider` — in-memory fake mailboxes |
+| SMTP | Real aiosmtplib send | Early-return with stdout log |
+| Database | Persistent SQLite volume | `tmpfs` mount — reset on each `up` cycle |
+| Seed data | Empty on first boot | `seed_demo_db()` inserts a realistic audit log history |
+| Session cookie | `https_only=True` | `https_only=False` (HTTP acceptable for local demo) |
+| Banner | None | Yellow banner on every page |
+
+**Security isolation:** `DEMO_MODE` is read once at startup from the server-side environment. There is no way to enable it via any HTTP request. All demo code paths are in dedicated modules (`services/demo.py`, `services/demo_seed.py`) with no effect when the flag is false. The production `docker-compose.yml` does not reference `DEMO_MODE`.
 
 ---
 

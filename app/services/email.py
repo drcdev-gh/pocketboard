@@ -60,6 +60,9 @@ async def send_offboarding_email(
     requested_by: dict,
     cc_email: str | None,
 ) -> None:
+    if config.demo_mode:
+        print(f"[demo] send_offboarding_email suppressed for {member.get('displayName', '')!r}")
+        return
     from datetime import datetime, timezone
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
@@ -130,6 +133,9 @@ async def send_invite_email(
     invite_url: str,
     groups: list[str],
 ) -> None:
+    if config.demo_mode:
+        print(f"[demo] send_invite_email suppressed for {to_email!r}")
+        return
     group_list = ", ".join(groups) if groups else "—"
     template = await _get_setting("email_template") or DEFAULT_TEMPLATE
     subject = await _get_setting("email_subject") or DEFAULT_SUBJECT

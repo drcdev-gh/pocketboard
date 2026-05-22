@@ -64,6 +64,13 @@
     }
   </script>
 
+  {% if demo_mode %}
+  <div class="demo-banner">
+    <strong>Demo mode</strong> — this instance is not connected to any real services.
+    No emails, accounts, or webhooks are active.
+  </div>
+  {% endif %}
+
   <main class="{% block container_class %}container{% endblock %}">
     {% block content %}{% endblock %}
   </main>

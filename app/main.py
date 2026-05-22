@@ -14,6 +14,22 @@ from app.services import anonymise as anonymise_svc
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+
+    if config.demo_mode:
+        import app.services.pocketid as pid_module
+        import app.services.migadu as migadu_module
+        import app.services.linked_accounts as la_module
+        from app.services.linked_accounts.providers.audit_log import AuditLogProvider
+        from app.services.demo import DemoIdentityProvider, DemoMailboxProvider, DemoMigaduLinkedAccountsProvider
+        from app.services.demo_seed import seed_demo_db
+
+        pid_module._provider = DemoIdentityProvider()
+        migadu_module._provider = DemoMailboxProvider()
+        la_module._providers = [AuditLogProvider(), DemoMigaduLinkedAccountsProvider()]
+
+        await seed_demo_db()
+        await overview.refresh_cache()
+
     overview_task = asyncio.create_task(overview.background_refresh_loop())
     reminder_task = asyncio.create_task(reminders.background_reminder_loop())
     anonymise_task = asyncio.create_task(anonymise_svc.background_anonymise_loop())
@@ -33,7 +49,7 @@ app.add_middleware(
     secret_key=config.app_secret_key,
     session_cookie="pocketboard_session",
     max_age=86400 * 2,  # cookie lifetime — actual session enforced to 24h in get_current_user
-    https_only=True,
+    https_only=not config.demo_mode,  # HTTP is acceptable for local demo use only
     same_site="lax",
 )
 
