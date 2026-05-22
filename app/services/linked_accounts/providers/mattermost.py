@@ -82,12 +82,6 @@ class MattermostProvider(LinkedAccountsProvider):
             mm_username = (user.get("username") or "").lower().strip()
             identifier = f"@{user.get('username', mm_id)}"
 
-            profile_url = (
-                f"{config.mattermost_url}/admin_console/user_management/user/{mm_id}"
-                if config.mattermost_url
-                else None
-            )
-
             if mm_email and mm_email in emails_to_check:
                 results.append(
                     LinkedAccount(
@@ -95,7 +89,6 @@ class MattermostProvider(LinkedAccountsProvider):
                         identifier=identifier,
                         confidence="likely",
                         match_reason="email match",
-                        profile_url=profile_url,
                     )
                 )
                 seen_mm_ids.add(mm_id)
@@ -106,7 +99,6 @@ class MattermostProvider(LinkedAccountsProvider):
                         identifier=identifier,
                         confidence="possible",
                         match_reason="username match",
-                        profile_url=profile_url,
                     )
                 )
                 seen_mm_ids.add(mm_id)
