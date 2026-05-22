@@ -35,8 +35,8 @@ def _validate_cc_local(local: str) -> bool:
 
 
 async def _get_offboardable_members(allowed_targets: list[str]) -> list[dict]:
-    """Return alphabetically sorted, deduplicated members from the allowed target groups.
-    Uses the overview cache when warm; falls back to a fresh PocketID fetch."""
+    """Return alphabetically sorted, deduplicated members whose every group is within
+    allowed_targets. Uses the overview cache when warm; falls back to a fresh PocketID fetch."""
     allowed_set = set(allowed_targets)
 
     if overview_module._cache is not None:
@@ -47,22 +47,37 @@ async def _get_offboardable_members(allowed_targets: list[str]) -> list[dict]:
                 continue
             for m in group.get("members", []):
                 if m.get("id") not in seen_ids:
-                    seen_ids.add(m["id"])
-                    members.append(m)
+                    member_groups = set(m.get("groupMemberships", []))
+                    if member_groups and member_groups.issubset(allowed_set):
+                        seen_ids.add(m["id"])
+                        members.append(m)
         members.sort(key=lambda m: (m.get("displayName") or "").lower())
         return members
 
     # Cache cold — fetch fresh from PocketID
     all_groups = await pid_svc.get_all_groups_with_members()
+
+    # Build full group membership for every user before filtering
+    user_all_groups: dict[str, set[str]] = {}
+    for g in all_groups:
+        gname = g.get("name", "")
+        for u in g.get("users", []):
+            uid = u.get("id")
+            if uid:
+                user_all_groups.setdefault(uid, set()).add(gname)
+
     seen_ids = set()
     members = []
     for g in all_groups:
         if g.get("name") not in allowed_set:
             continue
         for m in g.get("users", []):
-            if not m.get("disabled") and m.get("id") not in seen_ids:
-                seen_ids.add(m["id"])
-                members.append(m)
+            uid = m.get("id")
+            if not m.get("disabled") and uid and uid not in seen_ids:
+                all_member_groups = user_all_groups.get(uid, set())
+                if all_member_groups and all_member_groups.issubset(allowed_set):
+                    seen_ids.add(uid)
+                    members.append(m)
     members.sort(key=lambda m: (m.get("displayName") or "").lower())
     return members
 

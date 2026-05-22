@@ -26,11 +26,26 @@ _OFFBOARDABLE_MEMBER = {
     "displayName": "Alice Volunteer",
     "email": "alice@personal.com",
     "username": "alicevolunteer",
-    "groups": ["Volunteers"],
     "disabled": False,
     "lastActivity": None,
     "badges": [],
     "groupNames": ["Volunteers"],
+    "groupMemberships": ["Volunteers"],
+    "linkedAccounts": [],
+}
+
+# Member whose groups span both an allowed target AND a group the caller cannot offboard.
+# OFFBOARDING_MAPPINGS=Admin=Volunteers,Members — so Admin group is NOT a valid target.
+_MIXED_GROUPS_MEMBER = {
+    "id": "uid-mixed-001",
+    "displayName": "Mixed Groups Person",
+    "email": "mixed@personal.com",
+    "username": "mixedperson",
+    "disabled": False,
+    "lastActivity": None,
+    "badges": [],
+    "groupNames": ["Admin", "Volunteers"],
+    "groupMemberships": ["Admin", "Volunteers"],
     "linkedAccounts": [],
 }
 
@@ -149,6 +164,44 @@ def test_offboarding_page_falls_back_to_pocketid_when_cache_cold(admin_client):
         resp = admin_client.get("/offboarding")
     assert resp.status_code == 200
     assert "Alice Volunteer" in resp.text
+
+
+def test_offboarding_page_excludes_member_with_out_of_scope_group(admin_client):
+    """Member in an allowed group AND a non-allowed group must not appear."""
+    overview_module._cache = [
+        {
+            "name": "Volunteers",
+            "friendly_name": "Volunteers",
+            "members": [_MIXED_GROUPS_MEMBER],
+            "fetch_error": False,
+            "badge": None,
+        },
+    ]
+    with patch(f"{_LA}.for_member", AsyncMock(return_value=[])):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    assert "Mixed Groups Person" not in resp.text
+
+
+def test_offboarding_page_cold_cache_excludes_member_with_out_of_scope_group(admin_client):
+    """Cold-cache path must also apply the all-groups-must-be-allowed check."""
+    group_data = [
+        {
+            "id": "gid-v", "name": "Volunteers", "friendlyName": "Volunteers",
+            "users": [_MIXED_GROUPS_MEMBER],
+        },
+        {
+            "id": "gid-a", "name": "Admin", "friendlyName": "Admin",
+            "users": [_MIXED_GROUPS_MEMBER],
+        },
+    ]
+    with (
+        patch(f"{_PID}.get_all_groups_with_members", AsyncMock(return_value=group_data)),
+        patch(f"{_LA}.for_member", AsyncMock(return_value=[])),
+    ):
+        resp = admin_client.get("/offboarding")
+    assert resp.status_code == 200
+    assert "Mixed Groups Person" not in resp.text
 
 
 def test_offboarding_page_shows_warning_when_it_email_not_configured(admin_client, monkeypatch):
@@ -342,11 +395,27 @@ def test_accounts_endpoint_forbidden_for_member_not_in_allowed_groups(admin_clie
         "name": "Admin",  # Admin is not in OFFBOARDING_MAPPINGS targets for Admin caller
         "friendly_name": "Admin",
         "members": [{"id": "uid-admin-only", "displayName": "Secret Admin",
-                     "email": "secret@x.com", "username": "s", "disabled": False}],
+                     "email": "secret@x.com", "username": "s", "disabled": False,
+                     "groupMemberships": ["Admin"]}],
         "fetch_error": False,
         "badge": None,
     }]
     resp = admin_client.get("/offboarding/accounts/uid-admin-only")
+    assert resp.status_code == 403
+
+
+def test_accounts_endpoint_forbidden_for_member_with_out_of_scope_group(admin_client):
+    """Member in Volunteers (allowed) + Admin (not allowed) must be blocked."""
+    overview_module._cache = [
+        {
+            "name": "Volunteers",
+            "friendly_name": "Volunteers",
+            "members": [_MIXED_GROUPS_MEMBER],
+            "fetch_error": False,
+            "badge": None,
+        },
+    ]
+    resp = admin_client.get(f"/offboarding/accounts/{_MIXED_GROUPS_MEMBER['id']}")
     assert resp.status_code == 403
 
 
@@ -525,10 +594,25 @@ def test_send_forbidden_for_member_not_in_allowed_groups(admin_client):
         "name": "Admin",  # not in OFFBOARDING_MAPPINGS targets
         "friendly_name": "Admin",
         "members": [{"id": "uid-admin-only", "displayName": "X", "email": "x@x.com",
-                     "username": "x", "disabled": False}],
+                     "username": "x", "disabled": False, "groupMemberships": ["Admin"]}],
         "fetch_error": False, "badge": None,
     }]
     resp = admin_client.post("/offboarding/send", data={"member_id": "uid-admin-only"})
+    assert resp.status_code == 403
+
+
+def test_send_forbidden_for_member_with_out_of_scope_group(admin_client):
+    """POST /offboarding/send must be blocked when the member has a group outside allowed targets."""
+    overview_module._cache = [
+        {
+            "name": "Volunteers",
+            "friendly_name": "Volunteers",
+            "members": [_MIXED_GROUPS_MEMBER],
+            "fetch_error": False,
+            "badge": None,
+        },
+    ]
+    resp = admin_client.post("/offboarding/send", data={"member_id": _MIXED_GROUPS_MEMBER["id"]})
     assert resp.status_code == 403
 
 

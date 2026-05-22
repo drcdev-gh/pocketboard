@@ -67,6 +67,7 @@ async def _fetch_groups() -> list[dict]:
                 for group_name, badge in badge_map.items()
                 if group_name in member_groups
             ] if badge_map else []
+            u["groupMemberships"] = sorted(member_groups)
             u["groupNames"] = sorted([
                 group_friendly_names.get(n, n) for n in member_groups
             ])
