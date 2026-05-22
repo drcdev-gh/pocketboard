@@ -47,6 +47,14 @@ async def init_db():
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS org_audit_snooze (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                identifier TEXT UNIQUE NOT NULL,
+                kind TEXT NOT NULL,
+                snoozed_by_email TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
         """)
         await db.commit()
 

@@ -41,6 +41,7 @@
           <th>Name</th>
           <th>Email</th>
           <th>Username</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -49,6 +50,15 @@
           <td>{{ member.displayName }}</td>
           <td>{{ member.email or '—' }}</td>
           <td class="text-muted" style="font-size:0.85rem">{{ member.username }}</td>
+          <td style="text-align:right;white-space:nowrap">
+            {% if member.email %}
+            <form method="post" action="/org-audit/snooze" style="display:inline">
+              <input type="hidden" name="identifier" value="{{ member.email }}">
+              <input type="hidden" name="kind" value="pocketid_no_migadu">
+              <button type="submit" class="btn btn-secondary" style="font-size:0.8rem;padding:2px 8px">Snooze</button>
+            </form>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -74,6 +84,7 @@
         <tr>
           <th>Address</th>
           <th>Display name</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -81,6 +92,13 @@
         <tr>
           <td style="font-family:monospace;font-size:0.85rem">{{ mb.address }}</td>
           <td class="text-muted">{{ mb.name or '—' }}</td>
+          <td style="text-align:right;white-space:nowrap">
+            <form method="post" action="/org-audit/snooze" style="display:inline">
+              <input type="hidden" name="identifier" value="{{ mb.address }}">
+              <input type="hidden" name="kind" value="migadu_no_pocketid">
+              <button type="submit" class="btn btn-secondary" style="font-size:0.8rem;padding:2px 8px">Snooze</button>
+            </form>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -92,6 +110,45 @@
   </div>
   {% endif %}
 </div>
+
+{% if snoozed %}
+<details style="margin-top:2rem;margin-bottom:2rem">
+  <summary style="cursor:pointer;font-size:1.1rem;font-weight:700;padding:8px 0;user-select:none">
+    Snoozed entries
+    <span class="text-muted" style="font-weight:400;font-size:0.875rem">({{ snoozed | length }})</span>
+  </summary>
+  <p class="text-muted" style="font-size:0.85rem;margin:8px 0 12px">These entries have been snoozed and are hidden from the lists above. Unsnooze to move them back.</p>
+  <div class="card table-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Identifier</th>
+          <th>Type</th>
+          <th>Snoozed by</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in snoozed %}
+        <tr>
+          <td style="font-family:monospace;font-size:0.85rem">{{ entry.identifier }}</td>
+          <td class="text-muted" style="font-size:0.85rem">
+            {% if entry.kind == "pocketid_no_migadu" %}PocketID — no Migadu{% else %}Migadu — no PocketID{% endif %}
+          </td>
+          <td class="text-muted" style="font-size:0.85rem">{{ entry.snoozed_by_email }}</td>
+          <td style="text-align:right;white-space:nowrap">
+            <form method="post" action="/org-audit/unsnooze" style="display:inline">
+              <input type="hidden" name="identifier" value="{{ entry.identifier }}">
+              <button type="submit" class="btn btn-secondary" style="font-size:0.8rem;padding:2px 8px">Unsnooze</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endif %}
 
 {% endif %}
 {% endif %}

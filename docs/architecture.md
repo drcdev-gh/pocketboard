@@ -203,6 +203,18 @@ Same structure as `rate_limit_log`, tracks offboarding send actions.
 
 Currently stores `email_template` and `email_subject` (customisable via the Email Template UI).
 
+### `org_audit_snooze`
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER PK | |
+| `identifier` | TEXT UNIQUE | Email or mailbox address being snoozed |
+| `kind` | TEXT | `"pocketid_no_migadu"` or `"migadu_no_pocketid"` |
+| `snoozed_by_email` | TEXT | Email of the user who snoozed the entry (display only) |
+| `created_at` | TEXT | ISO-8601 UTC, default now |
+
+Entries are automatically deleted on each `/org-audit` page load if their identifier is no longer present in either mismatch list (i.e. the mismatch has been resolved).
+
 ---
 
 ## Background tasks
