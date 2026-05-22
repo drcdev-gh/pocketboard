@@ -30,6 +30,7 @@ os.environ.setdefault("RATE_LIMIT_PER_USER_PER_DAY", "5")
 os.environ.setdefault("RATE_LIMIT_GLOBAL_PER_DAY", "20")
 os.environ.setdefault("OFFBOARDING_MAPPINGS", "Admin=Volunteers,Members")
 os.environ.setdefault("LINKED_ACCOUNTS_IT_EMAIL", "it@example.com")
+os.environ.setdefault("ORG_AUDIT_GROUPS", "Admin")
 # MATTERMOST_URL / MATTERMOST_TOKEN intentionally not set — Mattermost is optional
 
 import app.database as database_module
@@ -60,6 +61,7 @@ _AUTH_TARGETS = [
     "app.routes.overview.get_current_user",
     "app.routes.auth.get_current_user",
     "app.routes.offboarding.get_current_user",
+    "app.routes.org_audit.get_current_user",
 ]
 
 

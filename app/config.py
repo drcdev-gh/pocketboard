@@ -49,6 +49,7 @@ class Config:
         self.mattermost_token = os.environ.get("MATTERMOST_TOKEN", "")
         self.linked_accounts_it_email = os.environ.get("LINKED_ACCOUNTS_IT_EMAIL", "")
         self.offboarding_mappings_raw = os.environ.get("OFFBOARDING_MAPPINGS", "")
+        self.org_audit_groups_raw = os.environ.get("ORG_AUDIT_GROUPS", "")
 
     @property
     def badge_mappings(self) -> Dict[str, str]:
@@ -96,6 +97,12 @@ class Config:
         if not self.org_overview_groups_raw:
             return []
         return [g.strip() for g in self.org_overview_groups_raw.split(",") if g.strip()]
+
+    @property
+    def org_audit_groups(self) -> List[str]:
+        if not self.org_audit_groups_raw:
+            return []
+        return [g.strip() for g in self.org_audit_groups_raw.split(",") if g.strip()]
 
     @property
     def audit_log_clear_groups(self) -> List[str]:

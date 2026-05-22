@@ -67,3 +67,10 @@ async def for_member(member: dict) -> list[LinkedAccount]:
 
 def as_serializable(accounts: list[LinkedAccount]) -> list[dict]:
     return [asdict(a) for a in accounts]
+
+
+def all_migadu_mailboxes() -> list[dict]:
+    for p in _providers:
+        if isinstance(p, MigaduProvider):
+            return list(p._mailboxes)
+    return []

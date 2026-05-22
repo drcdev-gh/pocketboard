@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Organisation Audit – Pocketboard{% endblock %}
+{% block container_class %}container-md{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Organisation Audit</h1>
+  <p class="text-muted">Cross-reference between PocketID accounts and Migadu mailboxes. Data is sourced from the in-memory cache shared with the Organisation Overview and refreshes every 12 hours.</p>
+</div>
+
+{% if access_denied %}
+<div class="alert alert-error">You do not have permission to view the organisation audit. Contact your IT administrator.</div>
+{% else %}
+
+{% if linked_account_errors %}
+<div class="alert alert-warning">
+  <strong>Linked account data may be incomplete.</strong>
+  The following providers failed to load during the last cache refresh:
+  <ul style="margin-top:6px;margin-left:16px">
+    {% for err in linked_account_errors %}<li>{{ err }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if cache_cold %}
+<div class="card empty-state">
+  <p>The organisation cache has not loaded yet. Please wait for the background refresh to complete and reload this page.</p>
+</div>
+{% else %}
+
+<div style="margin-bottom:2rem">
+  <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px">
+    PocketID accounts without a Migadu mailbox
+    <span class="text-muted" style="font-weight:400;font-size:0.875rem">({{ pocketid_no_migadu | length }})</span>
+  </h2>
+  <p class="text-muted" style="font-size:0.85rem;margin-bottom:12px">Active PocketID users for whom no Migadu mailbox could be matched in the current cache.</p>
+  {% if pocketid_no_migadu %}
+  <div class="card table-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Username</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in pocketid_no_migadu %}
+        <tr>
+          <td>{{ member.displayName }}</td>
+          <td>{{ member.email or '—' }}</td>
+          <td class="text-muted" style="font-size:0.85rem">{{ member.username }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card empty-state" style="padding:24px">
+    <p>No mismatches found — every PocketID user has a linked Migadu mailbox.</p>
+  </div>
+  {% endif %}
+</div>
+
+<div style="margin-bottom:2rem">
+  <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:4px">
+    Migadu mailboxes without a PocketID account
+    <span class="text-muted" style="font-weight:400;font-size:0.875rem">({{ migadu_no_pocketid | length }})</span>
+  </h2>
+  <p class="text-muted" style="font-size:0.85rem;margin-bottom:12px">Migadu mailboxes that could not be matched to any active PocketID user in the current cache. This may include mailing lists or aliases that will never have a PocketID account.</p>
+  {% if migadu_no_pocketid %}
+  <div class="card table-card">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Address</th>
+          <th>Display name</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mb in migadu_no_pocketid %}
+        <tr>
+          <td style="font-family:monospace;font-size:0.85rem">{{ mb.address }}</td>
+          <td class="text-muted">{{ mb.name or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card empty-state" style="padding:24px">
+    <p>No mismatches found — every Migadu mailbox is linked to a PocketID account.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endif %}
+{% endif %}
+{% endblock %}

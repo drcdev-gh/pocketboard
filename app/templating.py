@@ -37,6 +37,13 @@ def user_can_overview(user: dict) -> bool:
     return bool(set(user.get("groups", [])) & set(groups))
 
 
+def user_can_org_audit(user: dict) -> bool:
+    groups = config.org_audit_groups
+    if not groups:
+        return False
+    return bool(set(user.get("groups", [])) & set(groups))
+
+
 def user_can_edit_template(user: dict) -> bool:
     groups = config.email_template_groups
     if not groups:
@@ -63,3 +70,4 @@ templates.env.globals["user_can_clear_audit"] = user_can_clear_audit
 templates.env.globals["user_can_overview"] = user_can_overview
 templates.env.globals["user_can_edit_template"] = user_can_edit_template
 templates.env.globals["user_can_offboard"] = user_can_offboard
+templates.env.globals["user_can_org_audit"] = user_can_org_audit
