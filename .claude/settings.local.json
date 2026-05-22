@@ -28,7 +28,11 @@
       "WebFetch(domain:www.migadu.com)",
       "WebFetch(domain:api.mattermost.com)",
       "WebFetch(domain:developers.mattermost.com)",
-      "WebFetch(domain:docs.mattermost.com)"
+      "WebFetch(domain:docs.mattermost.com)",
+      "Bash(grep *)",
+      "Read(//Applications/Docker.app/**)",
+      "Read(//Users/david/.docker/**)",
+      "Bash(~/.docker/bin/com.docker.cli compose *)"
     ]
   }
 }

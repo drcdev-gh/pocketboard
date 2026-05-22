@@ -27,7 +27,10 @@ When asked to implement a ticket:
 1. Read `docs/architecture.md`
 2. Read the ticket file
 3. Read only the source files the ticket touches — avoid broad exploration
-4. Implement, test, commit
+4. Implement and test
+5. Review the code, specifically with a focus on security
+6. Review the code for GDPR relevancy and prompt the user for potentially needed changes
+7. Do a final review, check that the test coverage is good and commit
 
 ## Commit style
 
